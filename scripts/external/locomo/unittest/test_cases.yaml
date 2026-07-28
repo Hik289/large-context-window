@@ -1,0 +1,40 @@
+# Test Cases Configuration for Locomo Experiments
+# This file contains multiple test case scenarios for evaluating memory techniques
+
+test_cases:
+  - name: "Caroline research"
+    description: "Test case for Caroline's research activities"
+    conversation_idx: 0
+    session_idx: 2
+    num_sessions: 1
+    question: "What did Caroline research?"
+    answer: "Adoption agencies"
+
+  - name: "Caroline portrait"
+    conversation_idx: 0
+    session_idx: 13
+    num_sessions: 1
+    question: "When did Caroline draw a self-portrait?"
+    answer: "The week before 23 August 2023"
+
+  - name: "Melanie shopping"
+    conversation_idx: 0
+    session_idx: 7,19
+    num_sessions: 1
+    question: "What items has Melanie bought?"
+    answer: "Figurines, shoes"
+
+  - name: "Speaker interaction"
+    memory_store: "external_baseline-4.1-all"
+    conversation_idx: 0
+    question: "When did Caroline go to a pride parade during the summer?"
+    answer: "The week before 3 July 2023"
+
+# Batch testing configuration
+batch_config:
+  run_all_tests: false
+  selected_tests: 
+    - "Caroline Research Test"
+    - "Speaker Interaction Test"
+  output_results: true
+  compare_results: true

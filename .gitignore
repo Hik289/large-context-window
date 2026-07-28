@@ -1,0 +1,50 @@
+# --- Secrets ---
+.env
+*.key
+*_api_key*
+
+# --- Data (never commit corpora / indices / embeddings) ---
+data/
+**/data/
+*.pkl
+*.pickle
+*.parquet
+*.npy
+*.faiss
+*.jsonl
+chromadb/
+**/chromadb/
+chroma/
+**/chroma/
+*.sqlite3
+embeddings/
+**/embeddings/
+memory_store/
+**/memory_store/
+outputs/
+**/outputs/
+results/
+**/results/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Notebooks / OS ---
+.ipynb_checkpoints/
+.DS_Store
+
+# --- Figure outputs (regenerate with figures/make_all_figs.py) ---
+figures/**/*.png
+figures/**/*.pdf

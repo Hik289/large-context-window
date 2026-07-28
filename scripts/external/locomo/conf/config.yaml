@@ -1,0 +1,162 @@
+################################################################################
+# Configuration File Template for Synapse Application                          #
+#                                                                              #
+################################################################################
+
+# General configuration
+general:
+  # Path to the main repository directory
+  # Replace with the path to your local or remote AutoAdapt project
+  project_path: ./external_baseline/app/locomo
+
+  # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: "INFO"
+
+  # Data path
+  data_path: ${general.project_path}/data
+
+  # Path to saved model outputs
+  output_path: ${general.project_path}/outputs
+
+  # Path to results
+  results_path: ${general.project_path}/results
+
+  # memory store path
+  memory_store_path: ${general.project_path}/memory_store
+
+  # Path to log
+  logs_path: ${general.output_path}/logs
+
+  # Path to cache directory
+  cache_path: ${general.output_path}/cache
+
+  # debug mode: use a smaller dataset for quick testing
+  debug: false
+
+# LLM configuration
+llm:
+  # Model name used by the configured general API or local backend.
+  model: "YOUR_CHAT_MODEL"
+
+  seed: 42 # random seed for reproducibility
+
+openai:
+  # General API configuration.
+  api_type: "general"
+  managed_identity: ""
+
+  llm_api_base: "YOUR_LLM_API_BASE"
+
+  deployment_name: "${llm.model}"
+
+  # Text embedding API
+  embedding_api_base: "YOUR_EMBEDDING_API_BASE"
+
+  embedding_deployment_name: "YOUR_EMBEDDING_MODEL"
+  embedding_model: "${openai.embedding_deployment_name}"
+
+memory:
+  type: "external_baseline" # external_baseline, mem0, rag, full_context; [TO SUPPORT] langmem, zep
+  # memory_store: "external_baseline-4.1-subset1-mi"
+  memory_store: "agent_memory_debug"
+  persist_path: "${general.memory_store_path}/${memory.memory_store}"
+
+  collection_name: "agent_memory"
+  distance: "cosine"
+  query_score_threshold: 0.4
+  update_score_threshold: 0.8
+
+  force_rebuild: false
+  enhance_query: false
+  return_history: true
+
+  multimodal_support: false # Enable multimodal (text + images) processing for memory entries
+
+  # Search configuration
+  top_k: 30
+  cue_top_k: 20 # top-k memories to retrieve from cue index
+
+  # Cue index (cue anchors) for retrieval
+  enable_cue_index: false
+  # Predictive Cue Anchors: generate extrinsic cues via commonsense
+  # implication chains during memory construction (requires memory rebuild)
+  enable_predictive_cues: false
+
+  # Hybrid search configuration
+  enable_hybrid_search: true # Enable hybrid search combining semantic + keyword/BM25 search
+  hybrid_search_method: "bm25" # Choose "keyword" for keyword matching or "bm25" for BM25 ranking
+  hybrid_top_k: 10 # Number of results to retrieve from keyword/BM25 search (before merging with semantic results)
+  bm25_score_threshold: 0.4 # Minimum BM25 score threshold for filtering results
+
+  # Session expansion: when a session is hit, pull additional memories from
+  # that same session to improve recall on co-located evidence
+  enable_session_expansion: false
+  session_expansion_k: 5 # Max additional memories per hit session
+
+  # Cue-scan: LLM reasons over ALL cues in the store to find cognitive links
+  # that embedding similarity misses (contradiction, causation, consequence).
+  # Adds one LLM call per query (~10K input tokens for typical user).
+  enable_cue_scan: false
+
+  # Conversation Segmentation
+  enable_segmentation: true # Enable LLM-based conversation segmentation into topical episodes
+
+  # Episodic memory
+  enable_episodic_memory: true # Enable LLM-extracted high-level episodic memory alongside factual memories
+
+  # RAG specific configurations
+  chunk_size: 1000
+  num_chunks: 1
+
+retrieval:
+  strategy: "semantic" # options: semantic, prompt, plan, reformulate, hybrid, grpo
+
+  prompted_policy:
+    max_steps: 4
+
+  # LLM-based filtering configuration
+  enable_llm_filter: false # Enable LLM-based filtering to remove irrelevant retrieved memories
+
+  # Cognitive post-filter: after merging all retrieval paths (embedding, causal,
+  # cue-scan), an LLM scores every candidate for cognitive relevance
+  # (contradiction, causation, consequence, emotional echo) and drops noise
+  # before session expansion.
+  enable_post_filter: false
+
+  # Relaxed frontier expansion
+  enable_relaxed_frontier: false # Enable expanding frontier via similar cue indices
+
+  # Query-time commonsense expansion: the analysis LLM generates additional
+  # search queries through commonsense reasoning (no extra LLM call).
+  enable_query_expansion: false
+  query_expansion_top_k: null # Results per expansion query (null = same as memory.top_k)
+
+eval:
+  # multi-threading workers
+  max_workers: 5
+
+  # Combined user mode: use a single user ID combining both speakers
+  # instead of processing each speaker separately (useful for symmetric conversations)
+  use_combined_user: true
+
+  # Prompt template selection: "mem0" or "evermemos"
+  # mem0: mem0 answer prompt template
+  # evermemos: evermemos answer prompt template
+  prompt_template: "mem0"
+
+  model: "YOUR_JUDGE_MODEL"
+
+  # Reasoning effort for compatible response models.
+  # Supported values: none (default), low, medium, high, xhigh
+  # Higher reasoning helps the model do causal chain-of-thought over memories.
+  reasoning_effort: null
+
+  # Max memories to pass to the response model (null = no limit).
+  # Retrieval may return 100+ memories with session expansion; truncating
+  # reduces noise so the model focuses on the most relevant ones.
+  max_memories: null
+
+  # Separate judge model for cognitive eval (defaults to eval.model if not set)
+  judge_model: "YOUR_JUDGE_MODEL"
+
+  subset_idx: -1 # locomo dataset subset index (1-10) for quick testing, -1 for full dataset

@@ -1,0 +1,1 @@
+python run_agent_memory.py general.debug=True

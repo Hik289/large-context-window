@@ -1,0 +1,112 @@
+################################################################################
+# Configuration File Template for Synapse Application                          #
+#                                                                              #
+################################################################################
+
+# General configuration
+general:
+  # Path to the main repository directory
+  # Replace with the path to your local or remote AutoAdapt project
+  project_path: ./external_baseline/app/longmemeval
+
+  # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: "INFO"
+
+  # Data path
+  data_path: ${general.project_path}/data
+
+  # Path to saved model outputs
+  output_path: ${general.project_path}/outputs
+
+  # Path to results
+  results_path: ${general.project_path}/results
+
+  # memory store path
+  memory_store_path: ${general.project_path}/memory_store
+
+  # Path to log
+  logs_path: ${general.output_path}/logs
+
+  # Path to cache directory
+  cache_path: ${general.output_path}/cache
+
+  # debug mode: use a smaller dataset for quick testing
+  debug: false
+
+# LLM configuration
+llm:
+  # Model name used by the configured general API or local backend.
+  model: "YOUR_CHAT_MODEL"
+
+  seed: 42 # random seed for reproducibility
+
+openai:
+  # General API configuration.
+  api_type: "general"
+  managed_identity: ""
+
+  llm_api_base: "YOUR_LLM_API_BASE"
+
+  deployment_name: "${openai.deployment_name}"
+
+  # Text embedding API
+  embedding_api_base: "YOUR_EMBEDDING_API_BASE"
+
+  embedding_deployment_name: "YOUR_EMBEDDING_MODEL"
+  embedding_model: "${openai.embedding_deployment_name}"
+
+memory:
+  type: "external_baseline" # external_baseline, mem0, rag, full_context; [TO SUPPORT] langmem, zep
+  # memory_store: "external_baseline-4.1-subset1-mi"
+  memory_store: "agent_memory_debug"
+  persist_path: "${general.memory_store_path}/${memory.memory_store}"
+
+  collection_name: "agent_memory"
+  distance: "cosine"
+  query_score_threshold: 0.4
+  update_score_threshold: 0.8
+
+  top_k: 30
+
+  force_rebuild: false
+  return_history: true
+  enhance_query: false
+
+  # cue index
+  enable_cue_index: true # enable cue indexing for AgentMemory
+  cue_top_k: 20 # top-k memories to retrieve from cue index
+
+  # RAG specific configurations
+  chunk_size: 1000
+  num_chunks: 1
+
+  # Hybrid search configuration
+  enable_hybrid_search: true # Enable hybrid search combining semantic + keyword/BM25 search
+  hybrid_search_method: "bm25" # Choose "keyword" for keyword matching or "bm25" for BM25 ranking
+  hybrid_top_k: 10 # Number of results to retrieve from keyword/BM25 search (before merging with semantic results)
+  bm25_score_threshold: 0.4 # Minimum BM25 score threshold for filtering results
+
+  # Episodic memory
+  enable_episodic_memory: true # Enable LLM-extracted high-level episodic memory alongside factual memories
+
+retrieval:
+  strategy: "prompt" # options: semantic, prompt, grpo
+
+  prompted_policy:
+    max_steps: 4
+
+  # LLM-based filtering configuration
+  enable_llm_filter: false # Enable LLM-based filtering to remove irrelevant retrieved memories
+
+  # Relaxed frontier expansion
+  enable_relaxed_frontier: false # Enable expanding frontier via similar cue indices
+
+eval:
+  # multi-threading workers
+  max_workers: 10
+
+  model: "YOUR_JUDGE_MODEL"
+
+  subset_idx: -1 #  dataset subset index (1-500) for quick testing, -1 for full dataset
+
+  use_question_type_eval: true # Enable question type-specific evaluation prompts and reporting (same as Nemori paper)
