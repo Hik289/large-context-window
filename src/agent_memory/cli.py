@@ -9,9 +9,6 @@ import argparse
 import logging
 from pathlib import Path
 
-from .utils.log import configure_logging
-from .browser import InteractiveMemoryBrowser, MemoryViewer
-
 logger = logging.getLogger(__name__)
 
 
@@ -54,6 +51,8 @@ def _dispatch_browser(args):
 
 def main():
     """Top-level entry point for the agent_memory CLI."""
+    from .utils.log import configure_logging
+
     parser = argparse.ArgumentParser(
         description="agent_memory - Memory management framework for AI agents",
         formatter_class=argparse.RawDescriptionHelpFormatter,

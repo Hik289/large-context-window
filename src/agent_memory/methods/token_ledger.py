@@ -78,7 +78,10 @@ class TokenLedger:
                  alias_chosen_at: str = "",
                  alias_chosen_by: str = ""):
         self.prices = prices or DEFAULT_PRICES
-        self._lock = threading.Lock()
+        # ``export`` computes aggregate totals while holding this lock.  An
+        # RLock preserves a consistent snapshot without deadlocking when it
+        # calls ``grand_total``.
+        self._lock = threading.RLock()
         self._records: List[CallRecord] = []
         self._totals_by_phase: Dict[str, Dict[str, int]] = {}
         self._totals_by_model: Dict[str, Dict[str, int]] = {}

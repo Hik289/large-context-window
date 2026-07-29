@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this artifact, cite the paper and this repository."
+title: "Scaling Agent Context Beyond the Prompt: Provenance-Preserving Dual-View Memory at 250 Million Tokens"
+type: software
+version: "0.1.0"
+date-released: 2026-07-29
+authors:
+  - name: "Anonymous Authors"
+repository-code: "https://github.com/Hik289/large-context-window"
+license: MIT
+keywords:
+  - agent memory
+  - large context
+  - enterprise retrieval
+  - provenance
+  - retrieval-augmented generation

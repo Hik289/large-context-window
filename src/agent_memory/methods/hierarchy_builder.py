@@ -19,17 +19,15 @@ from __future__ import annotations
 import logging
 import os
 import random
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional
 
 import tiktoken
 
-sys.path.insert(0, "./experiments/v4")
-from configs.model_resolver import resolve, ModelAliasError  # noqa: E402
-from methods.dual_node import DualNode, NODE_STATE_LIGHT  # noqa: E402
-from methods.token_ledger import (  # noqa: E402
+from .configs.model_resolver import resolve
+from .dual_node import DualNode, NODE_STATE_LIGHT
+from .token_ledger import (
     PHASE_DISTILLED_GEN,
     PHASE_HIERARCHY_BUILD,
     TokenLedger,
