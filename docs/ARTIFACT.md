@@ -5,11 +5,11 @@
 - Installable `agent_memory` Python package
 - Canonical dual-view node, index, construction, and token-ledger components
 - Public model and environment templates
-- Credential-free tests and CI
+- Credential-free tests
 - External benchmark adapters
 - Deterministic aggregate plotting scripts
 - Result and protocol summaries
-- MIT license and citation metadata
+- MIT license
 
 ## Not Included
 

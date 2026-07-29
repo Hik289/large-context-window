@@ -3,10 +3,8 @@
 **ULMCW-Bench: provenance-preserving dual-view memory for corpora up to 250 million tokens**
 
 <p align="center">
-  <a href="https://github.com/Hik289/large-context-window/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Hik289/large-context-window/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Python" src="https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776AB">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-2E8B57.svg"></a>
-  <a href="CITATION.cff"><img alt="Citation" src="https://img.shields.io/badge/Citation-CFF-8A2BE2.svg"></a>
 </p>
 
 ULMCW-Bench studies how an agent can use a persistent document collection that is
