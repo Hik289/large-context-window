@@ -1,9 +1,9 @@
 # Reproducibility Guide
 
-This guide separates checks that are fully self-contained from experiments that require
-licensed data or configured model endpoints.
+This guide separates credential-free method checks from private full-system runs that
+require authorized corpora and configured model endpoints.
 
-## 1. Credential-Free Verification
+## Credential-Free Verification
 
 ```bash
 python -m venv .venv
@@ -16,20 +16,22 @@ python -m agent_memory.methods.token_ledger
 python -m agent_memory.methods.configs.isolation
 ```
 
-These commands validate serialization, dual-representation invariants, provenance,
-configuration isolation, token accounting, and the package CLI.
+These commands validate serialization, dual-representation invariants, provenance
+fields, configuration isolation, token accounting, and package importability without
+calling a model or loading a private corpus.
 
-## 2. Figure Reproduction
+## Method Figure Assets
 
 ```bash
 pip install -e ".[figures]"
 python figures/make_all_figs.py
 ```
 
-The figure scripts embed the final aggregate tables used by the manuscript. They write
-PDF and PNG outputs beside the scripts; generated figures are ignored by Git.
+Generated figures are ignored by Git. Some plotting utilities are retained for authors
+who have the private aggregate records used in manuscript preparation; they are not
+required for the public method checks.
 
-## 3. Model Configuration
+## Model Configuration
 
 ```bash
 cp .env.example .env
@@ -37,37 +39,38 @@ cp configs/models.example.yaml configs/models.yaml
 ```
 
 Each model alias must resolve to an explicit chat-completions-compatible endpoint and
-model identifier. Record the alias configuration, embedding model, seed, corpus manifest,
-and Git commit with every run.
+model identifier. The resolver fails loudly when an alias is missing or unresolved. Raw
+API keys should stay in environment variables, never in YAML.
 
-## 4. Data Contract
+## Data Contract
 
-The benchmark expects:
+Private runs should provide:
 
-- a document table containing stable `doc_id`, `title`, `source_type`, and `content`
-  fields;
-- a query JSONL stream with stable question identifiers and gold answers;
-- expected evidence identifiers for retrieval evaluation;
-- a deterministic tier manifest for each corpus scale;
-- a local directory for vector indexes and generated outputs.
+- a document table with stable source identifiers, titles, source types, and content;
+- a query stream with stable question identifiers and answer targets;
+- expected evidence identifiers when retrieval evaluation is required;
+- a corpus manifest and local index directory;
+- an output directory for predictions, citations, ledgers, and run metadata.
 
-Corpora, question files, manifests, and generated indices are intentionally not shipped.
-Use only data for which you have the appropriate access and redistribution rights.
+Corpora, query files, manifests, generated indexes, and model outputs are intentionally
+not shipped. Use only data for which you have the appropriate access and redistribution
+rights.
 
-## 5. Full Replay Boundary
+## Full System Boundary
 
 The repository contains the installable memory components, configuration guards,
-external-benchmark adapters, and aggregate plotting scripts. A full EnterpriseRAG replay
-also requires the official benchmark data and evaluation package. The adapter in
-`scripts/eval/metrics_based_eval.py` imports that package's `src.*` modules and is not a
-standalone evaluator.
+optional integration adapters, and plotting utilities. A full private replay may also
+require upstream data and evaluation packages that are not redistributed here. The
+adapter under `scripts/eval/` is an integration boundary, not a standalone evaluator.
 
-For an auditable replay, preserve:
+## Replay Record
 
-1. repository commit;
-2. corpus and query manifest checksums;
-3. model aliases and provider endpoints without secrets;
-4. embedding model and dimension;
-5. random seed and candidate depths;
-6. per-stage token ledger;
-7. predictions, citations, and metric outputs.
+For an auditable private run, preserve:
+
+- repository commit;
+- corpus and query manifests;
+- model aliases and provider endpoints without secrets;
+- embedding model and dimension;
+- retrieval and promotion configuration;
+- per-stage token ledger;
+- predictions, citations, and metric outputs.

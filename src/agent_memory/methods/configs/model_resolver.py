@@ -1,4 +1,4 @@
-"""Model alias resolver for ULMCW-Bench.
+"""Model alias resolver for Large Context Window Memory.
 
 The resolver maps each alias in models.yaml to one concrete general chat API
 model. Missing aliases and unresolved providers fail loudly so large runs cannot

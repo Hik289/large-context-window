@@ -122,11 +122,11 @@ def headline() -> None:
     ci_hi = np.array([81.70, 91.25, 83.92, 90.24])
     y = np.arange(len(metrics))
     fig, ax = plt.subplots(figsize=(7.6, 3.65))
-    ax.scatter(leader, y + 0.14, marker="s", s=55, color=GRAY, label="Public leader", zorder=4)
+    ax.scatter(leader, y + 0.14, marker="s", s=55, color=GRAY, label="External reference", zorder=4)
     ax.errorbar(
         ours, y - 0.14, xerr=np.vstack([ours - ci_lo, ci_hi - ours]),
         fmt="o", markersize=6.5, capsize=3.5, color=BLUE, ecolor=BLUE,
-        linewidth=1.4, label="DDI (95% bootstrap CI)", zorder=5,
+        linewidth=1.4, label="Our method", zorder=5,
     )
     for i, (b, o) in enumerate(zip(leader, ours)):
         ax.plot([b, o], [i + 0.14, i - 0.14], color="#B8BDC4", lw=1, zorder=1)
@@ -137,7 +137,7 @@ def headline() -> None:
     ax.invert_yaxis()
     ax.set_xlim(64, 93)
     ax.set_xlabel("Score (%)")
-    ax.set_title("Official 10M-token EnterpriseRAG-Bench comparison")
+    ax.set_title("External evaluation comparison")
     ax.legend(loc="lower right", frameon=False)
     fig.tight_layout()
     save(fig, "headline")

@@ -1,73 +1,42 @@
-# Results and Evaluation
+# Evaluation Boundary
 
-## Protocol Separation
+This repository is a solution release, not a public score table. Evaluation code and
+plotting utilities are kept to support private, authorized validation, but the public
+artifact centers on the method: dual-view memory, on-demand promotion, bounded packing,
+and provenance-preserving answer construction.
 
-The artifact preserves separate protocols rather than pooling incompatible runs:
+## What Evaluation Should Establish
 
-| Protocol | Purpose |
-| --- | --- |
-| Full-system 10M evaluation | Headline comparison with the public EnterpriseRAG-Bench reference |
-| Pure-mini six-tier evaluation | Controlled cost-oriented scaling from 10M to 250M tokens |
-| Leave-one-out component study | Identifies which mechanisms carry answer quality |
-| Reader-by-evidence control | Separates retrieval failure from answer-model capacity |
-| External probes | Tests transfer under a separately reported embedding protocol |
+- **Representation integrity.** Every memory node should preserve both a distilled
+  navigation view and a source-linked detailed view.
+- **Retrieval discipline.** Candidate discovery should remain separate from loading
+  detailed evidence into the answer context.
+- **Promotion behavior.** Detailed payloads should enter the context only when the
+  query requires them.
+- **Grounding quality.** Final answers should be traceable to explicit source evidence
+  identifiers.
+- **Budget accounting.** Prompt construction and model calls should be recorded through
+  the token ledger.
+- **Configuration isolation.** Model aliases, provider endpoints, and corpus paths
+  should be explicit and reproducible without exposing secrets.
 
-## Headline Comparison
+## Protocol Hygiene
 
-| Metric | Full system at 10M | Public reference | Difference |
-| --- | ---: | ---: | ---: |
-| Overall | 78.29 | 68.22 | +10.07 |
-| Correctness | 88.00 | 81.60 | +6.40 |
-| Completeness | 80.88 | 72.86 | +8.02 |
-| Document recall | 87.29 | 79.02 | +8.27 |
-| Invalid documents, lower is better | 3.80 | 0.47 | worse |
+Private runs should keep method comparisons, corpus variants, model aliases, and
+evaluation suites separated. Do not pool incompatible protocols into a single claim.
+When using an external evaluation package, keep its data, code, and license boundary
+outside this repository unless redistribution is explicitly permitted.
 
-The method improves four of the five reported comparisons. The invalid-document gap is
-not absorbed into a universal superiority claim.
+## Reporting Guidance
 
-## Scaling Diagnosis
+When reporting results outside this public artifact, include the repository commit,
+corpus manifest, model alias file, embedding configuration, retrieval settings, token
+ledger, answer outputs, and citation records. Keep raw credentials and restricted
+documents out of the repository.
 
-Correctness from 20M to 250M tokens changes as follows:
+## Public Claim
 
-| Reader | Evidence source | 20M | 250M | Change |
-| --- | --- | ---: | ---: | ---: |
-| Smaller reader | Gold documents | 82.50 | 82.25 | −0.25 |
-| Smaller reader | Retrieved documents | 84.00 | 73.50 | −10.50 |
-| Larger reader | Gold documents | 85.75 | 83.75 | −2.00 |
-| Larger reader | Retrieved documents | 70.25 | 56.25 | −14.00 |
-
-Gold evidence keeps both readers nearly flat while retrieved evidence degrades sharply.
-The control therefore localizes the primary scale bottleneck to retrieval recall.
-
-## Context Efficiency
-
-Under an aligned candidate depth:
-
-| Corpus | Mixed context | Full-detail context | Token reduction |
-| --- | ---: | ---: | ---: |
-| 10M | 2,049 tokens/query | 6,532 tokens/query | 3.19× |
-| 20M | 2,025 tokens/query | 6,497 tokens/query | 3.21× |
-
-The stable ratio supports a representation-efficiency claim, not a claim that the mixed
-context always maximizes correctness.
-
-## External Probes
-
-| Benchmark | Combined quality |
-| --- | ---: |
-| HotpotQA | 86.37 |
-| FinanceBench | 81.05 |
-| LoCoMo | 42.34 |
-| UltraDomain | 17.73 |
-
-The external probes use a local BGE-large embedding model, whereas the main pipeline uses
-the recorded hosted index. They are reported as transfer evidence under a distinct
-protocol.
-
-## Disclosure Notes
-
-- The official leaderboard claim uses the gold-answer-only judge protocol.
-- The system is higher on four of five comparisons, not five of five.
-- Citation extraction affects provenance rather than answer-quality metrics.
-- The external embedder differs from the main experimental embedder.
-- Raw licensed corpora, generated indices, and model outputs are not distributed here.
+The public claim of this artifact is methodological: large-context agents can be built
+around auditable dual-view memory instead of relying on ever-larger prompts. The code
+exposes the representation contract, retrieval interfaces, promotion path, packing
+logic, and provenance checks needed to instantiate that solution.

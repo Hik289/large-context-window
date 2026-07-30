@@ -3,9 +3,9 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ultra-large-memory-context-window-bench"
+name = "large-context-window-memory"
 version = "0.1.0"
-description = "ULMCW-Bench: an ultra-large memory context window benchmark and dual-view memory retrieval artifact."
+description = "A provenance-preserving dual-view memory solution for large-context agents."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

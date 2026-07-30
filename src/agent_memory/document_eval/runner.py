@@ -1,14 +1,8 @@
-"""
-End-to-end eval runner for document_eval.
+"""End-to-end document evaluation runner.
 
-Loads:
-- EnterpriseRAG-Bench docs (parquet) and questions (jsonl)
-- Optional manifest tier (e.g., tier_0M doc_ids) to restrict the doc set
-- Dev/test split (data/manifests/enterpriserag_dev_test_split.json)
-
-Builds: all 5 collections via DocumentBuildPipeline.
-Evaluates: for each question, runs DocumentRetriever -> generate_answer ->
-           compute 5 metrics, writes results.json.
+Loads authorized document tables, question streams, optional corpus manifests,
+and optional split files. Builds the document-memory collections via
+DocumentBuildPipeline, then runs retrieval, answer generation, and metric export.
 """
 from __future__ import annotations
 
@@ -283,7 +277,7 @@ def run_eval(
                     "embedding": cfg.local_embedding_model if cfg.use_local_embedding else "hosted",
                 },
                 "seed": cfg.seed,
-                "dataset": "EnterpriseRAG-Bench (0M tier, dev split)",
+                "dataset": "authorized document evaluation split",
             },
             "results": {
                 "main_metric": {
