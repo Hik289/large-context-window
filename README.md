@@ -10,26 +10,50 @@
 Large Context Window Memory is a method artifact for agents that must reason over
 persistent document collections without flattening those collections into a single
 prompt. The repository is organized as a solution package: it releases the memory
-representation, retrieval path, promotion controls, context
+representation, retrieval path, source-resolution controls, context
 packing, provenance checks, configuration templates, and credential-free tests needed
 to instantiate the method on an authorized corpus.
 
-The central design is a dual-view memory. Each source span is represented as a compact
-distilled node for navigation and a source-linked detailed view for grounding. At query
-time, the system searches the distilled and detailed surfaces, promotes detailed
-payloads only when they are needed, packs a bounded working context, and preserves the
-evidence trail used by the final answer.
+The central design separates the representation used to find evidence from the text
+allowed to support an answer. Each source span has a compact typed record for semantic
+access and a source-text view for exact evidence, connected by immutable document
+identifiers. Original and rewritten queries search both views; fused candidates are
+resolved to source text, reranked, and packed into a bounded evidence context. Only
+after generation does attribution identify the sources used by the answer.
 
 <p align="center">
-  <img src="assets/pipeline.png" alt="Dual-view memory construction, retrieval, reranking, bounded context packing, and citation pipeline">
+  <img src="assets/pipeline.png" alt="UltraMem maps ultra-large persistent memory through dual-view retrieval into a bounded source-faithful evidence context">
 </p>
+
+<p align="center"><em>UltraMem addresses the full memory while reading only the evidence needed for one answer.</em></p>
+
+## Pipeline Intuition
+
+The figure separates four capacities that are often collapsed into a single context
+window:
+
+1. **Persistent-memory capacity** is the complete addressable collection—illustrated
+   with policies, email, chat, tables, and code at scales from 10M to 250M tokens.
+2. **Candidate capacity** is the set reached by multi-route recall. Original and
+   rewritten queries search both the source-text and typed-memory views; identifier
+   resolution reconnects every distilled hit to its source.
+3. **Evidence-context capacity** is the small, fixed budget consumed by the answer
+   model. Rank fusion and cross-encoder reranking decide which source-text chunks enter
+   this budget.
+4. **Reported-source capacity** is the still smaller set retained by post-answer
+   attribution. It records which loaded documents support the completed answer rather
+   than treating every retrieved candidate as a citation.
+
+This separation is the key scaling principle: persistent memory may grow without
+forcing the answer model to reread the full collection, while source resolution keeps
+compressed retrieval records from becoming unsupported answer evidence.
 
 ## Method
 
 The method treats long-context reasoning as a memory-system problem rather than a
-larger-prompt problem. It separates what the agent needs for navigation from what it
-needs for faithful answer generation, then reconnects those views through explicit
-identifiers and provenance records.
+larger-prompt problem. It assigns semantic access, source-faithful generation, and
+attribution to separate stages, then reconnects them through explicit identifiers and
+provenance records.
 
 **Dual-view representation.** `DualNode` is the canonical memory unit. It carries a
 distilled text field for low-cost routing, a detailed text or detail reference for
@@ -42,17 +66,18 @@ detailed evidence remains anchored to the original span. This gives the system a
 semantic surface without discarding the text needed for citation and inspection.
 
 **Dual indexing.** `DualIndex` maintains separate distilled and detailed collections.
-The distilled side returns navigational candidates. The detailed side can be searched
-without loading full text into the answer context, so evidence discovery and evidence
-consumption remain distinct operations.
+Original and rewritten queries search both collections. The distilled side broadens
+semantic access; the source-text side preserves direct matches. Rank fusion combines
+the routes without assuming comparable score scales.
 
-**On-demand promotion.** Detailed payloads are loaded only after the retrieval policy
-chooses to promote them. This keeps the context window focused on useful evidence
-instead of treating every detailed match as prompt material.
+**Source resolution and reranking.** Every distilled hit is mapped back to source text
+before deduplication and cross-encoder reranking. The answer model therefore receives
+verbatim evidence rather than compressed records that may have omitted qualifiers,
+dates, exceptions, or conflicts.
 
-**Budgeted packing.** The context packer combines distilled memories and promoted
-detailed evidence under an explicit budget. The goal is not to maximize prompt volume;
-it is to provide the answer model with a compact, inspectable working set.
+**Budgeted packing.** The context packer admits the highest-ranked source-text chunks
+under an explicit budget. The goal is not to maximize prompt volume; it is to provide
+the answer model with a compact, inspectable working set.
 
 **Provenance and accounting.** Citation extraction, source evidence identifiers, model
 alias resolution, and token-ledger records make the method auditable. The code fails
@@ -62,10 +87,10 @@ loudly when required model aliases are missing or unresolved.
 
 - A dual-view memory schema that keeps distilled navigation and detailed evidence in
   one auditable node contract.
-- A retrieval interface that separates candidate discovery from detailed-context
+- A retrieval design that separates candidate discovery from source-text
   loading.
-- A promotion path for bringing detailed memory into the prompt only when the query
-  requires it.
+- An identifier-resolution path that maps distilled hits back to admissible answer
+  evidence.
 - A package-level configuration boundary that supports general chat-completions-style
   endpoints without committing provider-specific credentials.
 - Credential-free tests for method invariants, package importability, configuration
@@ -154,9 +179,9 @@ large-context-window/
 
 Large-context memory is useful only when sources are available, permitted, and
 traceable. This artifact focuses on the method layer: representation, retrieval,
-promotion, packing, and provenance. Deployment choices such as access control, secret
-management, provider routing, and corpus governance remain the responsibility of the
-deploying environment.
+source resolution, packing, and provenance. Deployment choices such as access control,
+secret management, provider routing, and corpus governance remain the responsibility
+of the deploying environment.
 
 ## License
 
