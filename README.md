@@ -1,18 +1,18 @@
-# Large Context Window Memory
+# UltraMem
 
-**A provenance-preserving dual-view memory solution for agents operating beyond the prompt**
+**Source-resolved retrieval for persistent memory beyond the prompt**
 
 <p align="center">
-  <img alt="Python package" src="https://img.shields.io/badge/Python-package-blue">
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-blue">
+  <img alt="Package version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-6f42c1">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
 </p>
 
-Large Context Window Memory is a method artifact for agents that must reason over
-persistent document collections without flattening those collections into a single
-prompt. The repository is organized as a solution package: it releases the memory
-representation, retrieval path, source-resolution controls, context
-packing, provenance checks, configuration templates, and credential-free tests needed
-to instantiate the method on an authorized corpus.
+UltraMem is a method artifact for agents that must reason over persistent document
+collections without flattening those collections into a single prompt. It releases the
+memory representation, retrieval path, source-resolution controls, context packing,
+provenance checks, configuration templates, and credential-free tests needed to
+instantiate the method on an authorized corpus.
 
 The central design separates the representation used to find evidence from the text
 allowed to support an answer. Each source span has a compact typed record for semantic
@@ -27,7 +27,21 @@ after generation does attribution identify the sources used by the answer.
 
 <p align="center"><em>UltraMem addresses the full memory while reading only the evidence needed for one answer.</em></p>
 
-## Pipeline Intuition
+## Why UltraMem
+
+A retrieval record is useful for finding evidence, but it is not necessarily safe to
+quote as evidence. UltraMem therefore gives retrieval and generation different views
+of the same source and reconnects them with immutable identifiers.
+
+| Stage | Representation | Enforced contract |
+| --- | --- | --- |
+| Discover | Distilled records and source text | Search both views with original and rewritten queries |
+| Resolve | Source identifiers | Map every distilled hit back to an authoritative source |
+| Select | Ranked source-text candidates | Fuse, deduplicate, and rerank before loading evidence |
+| Answer | Bounded detailed-evidence context | Generate only from loaded source evidence |
+| Attribute | Fixed answer and loaded sources | Report support after generation without changing the answer |
+
+## How It Scales
 
 The figure separates four capacities that are often collapsed into a single context
 window:
@@ -83,7 +97,7 @@ the answer model with a compact, inspectable working set.
 alias resolution, and token-ledger records make the method auditable. The code fails
 loudly when required model aliases are missing or unresolved.
 
-## Contributions
+## Design Guarantees
 
 - A dual-view memory schema that keeps distilled navigation and detailed evidence in
   one auditable node contract.
@@ -99,7 +113,7 @@ loudly when required model aliases are missing or unresolved.
 ## Installation
 
 ```bash
-git clone git@github.com:Hik289/large-context-window.git
+git clone https://github.com/Hik289/large-context-window.git
 cd large-context-window
 
 python -m venv .venv
@@ -117,17 +131,51 @@ pip install -e ".[evaluation,figures]"
 pip install -r requirements.txt
 ```
 
+The editable core install is intentionally small. Add optional dependency groups only
+for the capabilities you plan to use.
+
+## Quick Start
+
+The minimal example constructs a dual-view node and checks its representation and
+provenance invariants. It requires no corpus, model endpoint, or API key.
+
+```bash
+python examples/minimal_contract.py
+```
+
+The same contract is available directly from Python:
+
+```python
+from agent_memory.methods import DualNode, validate_batch
+
+node = DualNode(
+    node_id="policy:001",
+    level="L0",
+    distilled_text="Travel reimbursement policy and approval rules.",
+    detailed_text="Employees must submit receipts within 30 days...",
+    distilled_tokens=7,
+    detailed_tokens=42,
+    source_evidence_ids=["policy:001#section-4"],
+)
+
+report = validate_batch([node])
+assert report["overall_pass"]
+```
+
 ## Local Verification
 
 The following checks require no private corpus and no model credential:
 
 ```bash
 agent-memory --version
+python -m agent_memory --version
 pytest
 python -m agent_memory.methods.dual_node
 python -m agent_memory.methods.token_ledger
 python -m agent_memory.methods.configs.isolation
 ```
+
+Run the complete credential-free test and package-build gate with `make check`.
 
 ## Configuration
 
@@ -155,11 +203,14 @@ For review and reuse details, see:
 - [Artifact contract](docs/ARTIFACT.md)
 - [Reproducibility guide](docs/REPRODUCIBILITY.md)
 - [Evaluation boundary](docs/RESULTS.md)
+- [Contribution guide](CONTRIBUTING.md)
+- [Security policy](SECURITY.md)
 
 ## Repository Map
 
 ```text
 large-context-window/
+├── examples/                # zero-credential contract demonstration
 ├── src/agent_memory/
 │   ├── methods/            # dual nodes, dual index, hierarchy builder, token ledger
 │   ├── document_eval/      # document ingestion, retrieval, answering, and metrics utilities

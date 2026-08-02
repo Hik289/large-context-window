@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "large-context-window-memory"
 version = "0.1.0"
-description = "A provenance-preserving dual-view memory solution for large-context agents."
+description = "UltraMem: source-resolved dual-view retrieval for persistent memory beyond the prompt."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

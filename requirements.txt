@@ -1,5 +1,5 @@
-# Large Context Window Memory Python dependencies
-# Python 3.11 recommended.
+# UltraMem full-stack Python dependencies
+# Python 3.11 or newer.
 
 # --- Core retrieval / indexing ---
 chromadb>=0.5.0

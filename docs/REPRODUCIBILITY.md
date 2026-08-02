@@ -11,6 +11,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 
 pytest
+python -m agent_memory --version
 python -m agent_memory.methods.dual_node
 python -m agent_memory.methods.token_ledger
 python -m agent_memory.methods.configs.isolation
@@ -19,6 +20,12 @@ python -m agent_memory.methods.configs.isolation
 These commands validate serialization, dual-representation invariants, provenance
 fields, configuration isolation, token accounting, and package importability without
 calling a model or loading a private corpus.
+
+The same verification and package-build gate is available as:
+
+```bash
+make check
+```
 
 ## Method Figure Assets
 

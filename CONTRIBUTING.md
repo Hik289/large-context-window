@@ -4,7 +4,7 @@ Contributions should preserve the artifact's reproducibility and provenance cont
 
 1. Create a focused branch.
 2. Add or update tests for behavior changes.
-3. Run `pytest` and `python -m build`.
+3. Run `make check` (tests, method self-tests, and package build).
 4. Keep credentials, corpora, generated indexes, outputs, and figures out of Git.
 5. Record protocol changes explicitly; do not silently change model aliases, embedding
    models, candidate depths, denominators, or judge settings.

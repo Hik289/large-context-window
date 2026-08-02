@@ -1,4 +1,4 @@
-# Artifact Contract
+# UltraMem Artifact Contract
 
 This release is scoped as a method artifact for large-context agent memory. It is
 intended to make the solution inspectable, installable, and reusable without bundling

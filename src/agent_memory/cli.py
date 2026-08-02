@@ -7,7 +7,8 @@ Top-level command-line entry point for the memory framework.
 import sys
 import argparse
 import logging
-from pathlib import Path
+
+from . import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def main():
     from .utils.log import configure_logging
 
     parser = argparse.ArgumentParser(
-        description="agent_memory - Memory management framework for AI agents",
+        description="UltraMem - Source-resolved memory retrieval beyond the prompt",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -78,7 +79,7 @@ Examples:
     parser.add_argument(
         '--version',
         action='version',
-        version='agent_memory 0.1.0'
+        version=f'agent_memory {__version__}'
     )
 
     parser.add_argument(

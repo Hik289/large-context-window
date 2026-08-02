@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import sys
 
 import pytest
@@ -20,3 +21,14 @@ def test_cli_version(monkeypatch, capsys) -> None:
 
     assert exc.value.code == 0
     assert "0.1.0" in capsys.readouterr().out
+
+
+def test_module_entrypoint_exposes_version() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "agent_memory", "--version"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert agent_memory.__version__ in completed.stdout
