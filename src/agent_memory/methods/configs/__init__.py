@@ -1,1 +1,1 @@
-# V4 configs package marker. See schema.yaml + models.yaml.
+"""UltraMem experiment and model configuration helpers."""

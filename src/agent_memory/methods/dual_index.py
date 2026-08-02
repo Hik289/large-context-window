@@ -1,12 +1,11 @@
-"""V4 Dual Index — distilled + detailed ChromaDB collections.
+"""UltraMem dual index backed by distilled and detailed ChromaDB collections.
 
-Per the design spec §3.2:
 - distilled_index always returns candidates (id + distance + minimal metadata)
 - detailed_index by default returns ID/score only — detailed *text* is NOT
   loaded into LLM context unless the caller explicitly opts in via
   load_detailed_payload(ids) (which the promotion controller will do).
 
-This design ensures that token-budget accounting is honest: simply *finding* a
+This design keeps token-budget accounting honest: simply *finding* a
 candidate detailed match does not consume detailed-context tokens. Only an
 explicit promotion + payload load consumes them.
 

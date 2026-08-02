@@ -1,6 +1,6 @@
-"""V4 Token Ledger — per-phase, per-model token accounting.
+"""UltraMem per-phase, per-model token accounting.
 
-Per the design spec §9.3, V4 must report separately:
+The ledger reports separately:
   - hierarchy_build_input/output
   - distilled_representation
   - detailed_representation
@@ -13,7 +13,7 @@ Per the design spec §9.3, V4 must report separately:
 This ledger keeps a single in-memory structure for the lifetime of a run, and
 writes it out at end as JSON. It is thread-safe (one lock around mutations).
 
-It also estimates API cost using a simple per-model price table (configurable).
+It estimates API cost only when the caller supplies an explicit price table.
 """
 from __future__ import annotations
 
@@ -25,24 +25,22 @@ from typing import Any, Dict, List, Optional
 
 
 # ---------------------------------------------------------------------------
-# Price table (USD per 1M tokens). Approximate as of 2026; values can be
-# overridden via TokenLedger(prices={...}).
+# Price table (USD per 1M tokens).
+#
+# Pricing changes independently of this package, so UltraMem does not ship
+# provider prices. Pass TokenLedger(prices={...}) to enable cost estimates.
 # ---------------------------------------------------------------------------
 
-DEFAULT_PRICES = {
-    "gpt_5_4_mini": {"input": 0.15, "output": 0.60},
-    "gpt_5_4": {"input": 0.10, "output": 0.40},  # gpt-oss-120b on CloudLLM (provisional)
-    "gpt_4o_mini": {"input": 0.15, "output": 0.60},
-}
+DEFAULT_PRICES: Dict[str, Dict[str, float]] = {}
 
 
 # ---------------------------------------------------------------------------
-# Categories — the design spec §9.3
+# Accounting categories
 # ---------------------------------------------------------------------------
 
 PHASE_HIERARCHY_BUILD = "hierarchy_build"
 PHASE_DISTILLED_GEN = "distilled_text_gen"
-PHASE_DETAILED_GEN = "detailed_text_gen"  # in V4 main, detailed=raw L0, no LLM
+PHASE_DETAILED_GEN = "detailed_text_gen"
 PHASE_RETRIEVAL = "retrieval"
 PHASE_PROMOTION_DECISION = "promotion_decision"
 PHASE_PROMOTED_CONTEXT = "promoted_context"
@@ -77,7 +75,7 @@ class TokenLedger:
                  alias_status: str = "",
                  alias_chosen_at: str = "",
                  alias_chosen_by: str = ""):
-        self.prices = prices or DEFAULT_PRICES
+        self.prices = DEFAULT_PRICES if prices is None else prices
         # ``export`` computes aggregate totals while holding this lock.  An
         # RLock preserves a consistent snapshot without deadlocking when it
         # calls ``grand_total``.
@@ -94,7 +92,9 @@ class TokenLedger:
         self.alias_chosen_by = alias_chosen_by
 
     def _compute_cost(self, model_alias: str, in_t: int, out_t: int) -> float:
-        prices = self.prices.get(model_alias) or self.prices.get("gpt_5_4_mini", {"input": 0.15, "output": 0.60})
+        prices = self.prices.get(model_alias)
+        if prices is None:
+            return 0.0
         return in_t / 1e6 * prices["input"] + out_t / 1e6 * prices["output"]
 
     def record(self, phase: str, model_alias: str, input_tokens: int,
@@ -146,6 +146,7 @@ class TokenLedger:
                 "alias_status": self.alias_status,
                 "alias_chosen_at": self.alias_chosen_at,
                 "alias_chosen_by": self.alias_chosen_by,
+                "pricing_status": "configured" if self.prices else "not_configured",
                 "totals": self.grand_total(),
                 "by_phase": {k: {**v, "cost": round(v["cost"], 6), "wall": round(v["wall"], 2)}
                              for k, v in self._totals_by_phase.items()},
@@ -169,10 +170,16 @@ class TokenLedger:
 
 
 def _self_test() -> int:
-    led = TokenLedger(run_id="t1", method="V4", alias_status="PROVISIONAL")
-    led.record("distilled_text_gen", "gpt_5_4_mini", 100, 30, 0.5)
-    led.record("distilled_text_gen", "gpt_5_4_mini", 120, 28, 0.6)
-    led.record("final_answer", "gpt_5_4", 1500, 200, 2.0)
+    prices = {
+        "small": {"input": 0.20, "output": 0.80},
+        "large": {"input": 1.00, "output": 4.00},
+    }
+    led = TokenLedger(
+        prices=prices, run_id="t1", method="dual-view", alias_status="EXAMPLE"
+    )
+    led.record("distilled_text_gen", "small", 100, 30, 0.5)
+    led.record("distilled_text_gen", "small", 120, 28, 0.6)
+    led.record("final_answer", "large", 1500, 200, 2.0)
     g = led.grand_total()
     print("grand:", g)
     led.export("/tmp/test_ledger.json", include_raw=True)
@@ -180,7 +187,9 @@ def _self_test() -> int:
         doc = json.load(f)
     assert doc["totals"]["calls"] == 3
     assert doc["by_phase"]["distilled_text_gen"]["calls"] == 2
-    assert doc["alias_status"] == "PROVISIONAL"
+    assert doc["alias_status"] == "EXAMPLE"
+    assert doc["pricing_status"] == "configured"
+    assert doc["totals"]["cost_usd"] > 0
     print("[PASS] token_ledger self-test")
     return 0
 

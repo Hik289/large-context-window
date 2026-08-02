@@ -1,8 +1,9 @@
-"""Model alias resolver for UltraMem.
+"""Model alias resolution for UltraMem.
 
-The resolver maps each alias in models.yaml to one concrete general chat API
-model. Missing aliases and unresolved providers fail loudly so large runs cannot
-silently drift across model families.
+Configuration is loaded from ``ULTRAMEM_MODELS_CONFIG`` when set, then from
+``configs/models.yaml`` in the current project, and finally from the packaged
+template. Missing aliases, unresolved providers, and placeholder model names
+fail loudly so runs cannot silently drift across model families.
 """
 from __future__ import annotations
 
@@ -21,30 +22,75 @@ class ModelAliasError(RuntimeError):
     pass
 
 
+CONFIG_ENV_VAR = "ULTRAMEM_MODELS_CONFIG"
 CONFIG_DIR = Path(__file__).parent
-MODELS_YAML = CONFIG_DIR / "models.yaml"
+PACKAGED_MODELS_YAML = CONFIG_DIR / "models.yaml"
 
-_CACHE: Dict[str, Any] = {}
+_CACHE: Dict[Path, Dict[str, Any]] = {}
+
+
+def _load_project_env() -> None:
+    """Load a local ``.env`` when the optional LLM dependencies are installed."""
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    load_dotenv(dotenv_path=Path.cwd() / ".env", override=False)
+
+
+def models_config_path() -> Path:
+    """Return the model-alias configuration selected for this process."""
+    _load_project_env()
+    configured = os.environ.get(CONFIG_ENV_VAR, "").strip()
+    if configured:
+        path = Path(configured).expanduser().resolve()
+        if not path.is_file():
+            raise ModelAliasError(
+                f"{CONFIG_ENV_VAR} points to a missing file: {path}"
+            )
+        return path
+
+    project_config = Path.cwd() / "configs" / "models.yaml"
+    if project_config.is_file():
+        return project_config.resolve()
+
+    return PACKAGED_MODELS_YAML
+
+
+def clear_config_cache() -> None:
+    """Clear parsed model configs, primarily after changing config at runtime."""
+    _CACHE.clear()
 
 
 def _load_models_yaml() -> Dict[str, Any]:
-    global _CACHE
-    if _CACHE:
-        return _CACHE
-    with open(MODELS_YAML) as f:
-        _CACHE = yaml.safe_load(f) or {}
-    return _CACHE
+    path = models_config_path()
+    if path not in _CACHE:
+        with path.open(encoding="utf-8") as handle:
+            _CACHE[path] = yaml.safe_load(handle) or {}
+    return _CACHE[path]
 
 
 def resolve(alias: str) -> Dict[str, Any]:
     """Return the spec for an alias."""
     cfg = _load_models_yaml()
+    if not isinstance(cfg, dict):
+        raise ModelAliasError(
+            f"model config must contain a YAML mapping: {models_config_path()}"
+        )
     aliases = cfg.get("aliases", {})
+    if not isinstance(aliases, dict):
+        raise ModelAliasError(
+            f"'aliases' must be a YAML mapping: {models_config_path()}"
+        )
     if alias not in aliases:
         raise ModelAliasError(
             f"unknown model alias {alias!r}. Known: {sorted(aliases.keys())}"
         )
     spec = aliases[alias]
+    if not isinstance(spec, dict):
+        raise ModelAliasError(
+            f"alias {alias!r} must contain a YAML mapping in {models_config_path()}"
+        )
     if str(spec.get("provider", "")).upper() == "UNRESOLVED":
         raise ModelAliasError(
             f"alias {alias!r} is UNRESOLVED. "
@@ -54,6 +100,13 @@ def resolve(alias: str) -> Dict[str, Any]:
         raise ModelAliasError(
             f"alias {alias!r} uses provider={spec.get('provider')!r}; "
             "only provider='general' is accepted by this artifact."
+        )
+    model = str(spec.get("model", "")).strip()
+    if not model or model.upper().startswith("YOUR_"):
+        raise ModelAliasError(
+            f"alias {alias!r} has no concrete model in {models_config_path()}. "
+            f"Copy configs/models.example.yaml to configs/models.yaml and replace "
+            f"the placeholders, or set {CONFIG_ENV_VAR} to a completed config."
         )
     return spec
 
@@ -119,10 +172,19 @@ def smoke_test(alias: str) -> Dict[str, Any]:
 def list_aliases() -> Dict[str, str]:
     """Return {alias: status} for diagnostics."""
     cfg = _load_models_yaml()
+    if not isinstance(cfg, dict) or not isinstance(cfg.get("aliases", {}), dict):
+        raise ModelAliasError(
+            f"model config must contain an 'aliases' mapping: {models_config_path()}"
+        )
     out = {}
     for alias, spec in cfg.get("aliases", {}).items():
+        if not isinstance(spec, dict):
+            out[alias] = "INVALID (expected a mapping)"
+            continue
         if str(spec.get("provider", "")).upper() == "UNRESOLVED":
             out[alias] = f"UNRESOLVED ({spec.get('blocker', '?')})"
+        elif not str(spec.get("model", "")).strip() or str(spec.get("model", "")).upper().startswith("YOUR_"):
+            out[alias] = f"PLACEHOLDER ({spec.get('model', 'missing model')})"
         else:
             out[alias] = f"{spec.get('provider')}::{spec.get('model')}"
     return out

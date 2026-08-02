@@ -1,14 +1,12 @@
-"""V4 DualNode — schema and validator.
+"""UltraMem dual-view node schema and validator.
 
-Per the design spec §3.1, each hierarchy node must carry BOTH a lightweight
-distilled representation and a fuller detailed representation, plus all
-the state fields needed for promotion / decay.
+Each hierarchy node carries both a lightweight distilled representation and a
+fuller detailed representation, plus the state needed for promotion and decay.
 
-The DualNode is the **canonical** node format throughout V4. Methods may
-add per-method auxiliary fields under `extra`, but the contract below
-MUST hold for every node in every dataset.
+``DualNode`` is the canonical node format. Integrations may add auxiliary fields
+under ``extra``, but the contract below must hold for every node.
 
-Validation acceptance (the design spec §6 Step 3):
+Validation invariants:
   1. 100% of nodes have both distilled_text + detailed_text and their token counts.
   2. >=95% of nodes have distilled_tokens < detailed_tokens.
   3. 100% provenance traceability: every node carries source_evidence_ids that
@@ -26,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 
 # ---------------------------------------------------------------------------
-# Node state machine (the design spec §3.4)
+# Node state machine
 # ---------------------------------------------------------------------------
 
 NODE_STATE_LIGHT = "LIGHT"
@@ -41,30 +39,26 @@ VALID_NODE_STATES = {NODE_STATE_LIGHT, NODE_STATE_PROMOTED}
 
 @dataclass
 class DualNode:
-    """Canonical V4 node — both representations + promotion state.
+    """Canonical node with dual representations and promotion state."""
 
-    Per the design spec §3.1 field table. Fields marked (Step3) are required at
-    Step 3 time; fields marked (Step4) are populated by the promotion controller.
-    """
-
-    # --- Identity (Step3) ---
+    # --- Identity ---
     node_id: str
     level: str  # "L0" | "L1" | "L2" | ...
     tenant_id: str = ""
 
-    # --- Dual representation (Step3) ---
+    # --- Dual representation ---
     distilled_text: str = ""
     detailed_text: str = ""
     detail_ref: str = ""  # optional alternative to detailed_text when content lives elsewhere
     distilled_tokens: int = 0
     detailed_tokens: int = 0
 
-    # --- Provenance (Step3) ---
+    # --- Provenance ---
     # All L0 evidence_span_ids (or analogous IDs) the node traces back to.
     source_evidence_ids: List[str] = field(default_factory=list)
     # When this node is L0 itself, source_evidence_ids may be a single self-reference.
 
-    # --- Lifecycle & state (Step4 — defaults safe at Step3) ---
+    # --- Lifecycle and runtime state ---
     state: str = NODE_STATE_LIGHT
     promotion_score: float = 0.0
     last_promoted_query_idx: int = -1
@@ -72,12 +66,12 @@ class DualNode:
     promotion_count: int = 0
     detail_use_count: int = 0
 
-    # --- Build/model attribution (Step3) ---
+    # --- Build/model attribution ---
     # Which model alias produced distilled_text. Carried for replay if alias swaps.
     distilled_text_model_alias: str = ""
     distilled_text_model_status: str = ""  # e.g. "PROVISIONAL" when alias_status==PROVISIONAL
 
-    # --- Extra metadata (Step3+) ---
+    # --- Extension metadata ---
     extra: Dict[str, Any] = field(default_factory=dict)
 
     # ----- helpers -----
@@ -147,7 +141,7 @@ def validate_batch(nodes: List[DualNode]) -> Dict[str, Any]:
     """Validate a list of DualNodes; return a structured report.
 
     The report includes per-node error counts, aggregate metrics, and pass/fail
-    flags aligned with the design spec §6 Step 3 acceptance criteria.
+    flags aligned with the public dual-view representation contract.
     """
     per_node_errors: Dict[str, List[str]] = {}
     total = len(nodes)

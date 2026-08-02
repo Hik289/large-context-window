@@ -190,6 +190,20 @@ Model aliases map to general chat-completions-style endpoints through environmen
 variables. Raw keys stay outside YAML. Real `.env` files, corpora, model outputs,
 generated indexes, manifests, and run artifacts are ignored by Git.
 
+UltraMem reads model aliases from `configs/models.yaml` in the current project. To use
+a config elsewhere, set `ULTRAMEM_MODELS_CONFIG` to its path. Placeholder model names
+are rejected before an API call is attempted.
+
+Inspect the selected path and non-secret alias status:
+
+```bash
+agent-memory config
+```
+
+Token accounting is always available. Cost accounting is opt-in: pass an explicit
+per-model price table to `TokenLedger` so changing provider prices are never silently
+treated as fixed package defaults.
+
 ## Artifact Boundary
 
 This repository contains the method implementation and public contracts. It does not

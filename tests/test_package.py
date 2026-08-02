@@ -32,3 +32,16 @@ def test_module_entrypoint_exposes_version() -> None:
     )
 
     assert agent_memory.__version__ in completed.stdout
+
+
+def test_config_command_reports_active_file() -> None:
+    completed = subprocess.run(
+        [sys.executable, "-m", "agent_memory", "config"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Model config:" in completed.stdout
+    assert "chat_low:" in completed.stdout
+    assert "PLACEHOLDER" in completed.stdout

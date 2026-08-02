@@ -49,6 +49,37 @@ Each model alias must resolve to an explicit chat-completions-compatible endpoin
 model identifier. The resolver fails loudly when an alias is missing or unresolved. Raw
 API keys should stay in environment variables, never in YAML.
 
+By default, the resolver reads `configs/models.yaml` from the current project. Set
+`ULTRAMEM_MODELS_CONFIG=/absolute/path/to/models.yaml` when running from another
+directory or when maintaining multiple replay configurations. The packaged file is a
+template only; unresolved placeholders are rejected before an API call.
+
+```bash
+agent-memory config
+```
+
+This command prints the selected YAML path and model identifiers, but never API keys.
+
+## Cost Accounting
+
+`TokenLedger` records calls and input/output tokens without a pricing configuration.
+For cost estimates, pass a price table in USD per million tokens:
+
+```python
+from agent_memory.methods import TokenLedger
+
+ledger = TokenLedger(
+    # Illustrative values only; replace them with dated provider prices.
+    prices={
+        "chat_low": {"input": 0.20, "output": 0.80},
+        "chat_high": {"input": 1.00, "output": 4.00},
+    }
+)
+```
+
+Use prices corresponding to the provider and date of the run. An unconfigured model is
+recorded with zero estimated cost rather than inheriting another model's price.
+
 ## Data Contract
 
 Private runs should provide:

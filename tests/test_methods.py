@@ -6,6 +6,7 @@ import pytest
 
 from agent_memory.methods import DualNode, TokenLedger, validate_batch, validate_one
 from agent_memory.methods.configs.isolation import V4ConfigError, validate_config
+from agent_memory.methods.configs import model_resolver
 
 
 def _valid_node(node_id: str = "node-1") -> DualNode:
@@ -48,7 +49,70 @@ def test_token_ledger_exports_without_deadlock(tmp_path) -> None:
 
     assert data["totals"]["calls"] == 2
     assert data["totals"]["total_tokens"] == 132
+    assert data["totals"]["cost_usd"] == 0
+    assert data["pricing_status"] == "not_configured"
     assert len(data["records"]) == 2
+
+
+def test_token_ledger_uses_only_explicit_prices() -> None:
+    ledger = TokenLedger(
+        prices={"reader": {"input": 1.0, "output": 2.0}}
+    )
+    ledger.record("final_answer", "reader", 1_000_000, 500_000, 0.1)
+    ledger.record("judge", "unpriced", 1_000_000, 1_000_000, 0.1)
+
+    assert ledger.grand_total()["cost_usd"] == 2.0
+
+
+def test_model_resolver_uses_explicit_config(tmp_path, monkeypatch) -> None:
+    config = tmp_path / "models.yaml"
+    config.write_text(
+        "aliases:\n"
+        "  chat_low:\n"
+        "    provider: general\n"
+        "    model: test-model\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ULTRAMEM_MODELS_CONFIG", str(config))
+    model_resolver.clear_config_cache()
+
+    assert model_resolver.models_config_path() == config.resolve()
+    assert model_resolver.resolve("chat_low")["model"] == "test-model"
+
+
+def test_model_resolver_uses_project_config(tmp_path, monkeypatch) -> None:
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    config = config_dir / "models.yaml"
+    config.write_text(
+        "aliases:\n"
+        "  chat_low:\n"
+        "    provider: general\n"
+        "    model: project-model\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("ULTRAMEM_MODELS_CONFIG", raising=False)
+    monkeypatch.chdir(tmp_path)
+    model_resolver.clear_config_cache()
+
+    assert model_resolver.models_config_path() == config.resolve()
+    assert model_resolver.resolve("chat_low")["model"] == "project-model"
+
+
+def test_model_resolver_rejects_placeholder(tmp_path, monkeypatch) -> None:
+    config = tmp_path / "models.yaml"
+    config.write_text(
+        "aliases:\n"
+        "  chat_low:\n"
+        "    provider: general\n"
+        "    model: YOUR_CHAT_MODEL\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("ULTRAMEM_MODELS_CONFIG", str(config))
+    model_resolver.clear_config_cache()
+
+    with pytest.raises(model_resolver.ModelAliasError, match="no concrete model"):
+        model_resolver.resolve("chat_low")
 
 
 def test_isolation_rejects_forbidden_subsampling() -> None:

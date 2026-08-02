@@ -13,6 +13,15 @@ from . import __version__
 logger = logging.getLogger(__name__)
 
 
+def _show_config(_args):
+    """Print the active model config and its non-secret alias mapping."""
+    from .methods.configs.model_resolver import list_aliases, models_config_path
+
+    print(f"Model config: {models_config_path()}")
+    for alias, status in sorted(list_aliases().items()):
+        print(f"  {alias}: {status}")
+
+
 def _dispatch_browser(args):
     """Forward the ``browser`` subcommand to the dedicated module CLI."""
     from .browser.__main__ import main as browser_main
@@ -149,6 +158,12 @@ Examples:
     )
 
     browser_parser.set_defaults(func=_dispatch_browser)
+
+    config_parser = subparsers.add_parser(
+        'config',
+        help='Show the active model-alias configuration',
+    )
+    config_parser.set_defaults(func=_show_config)
 
     args = parser.parse_args()
 

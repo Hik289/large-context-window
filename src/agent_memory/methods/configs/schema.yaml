@@ -1,6 +1,5 @@
-# V4 Unified Config Schema
-# Every V4 experiment must be invokable with a single config file conforming to this schema.
-# Per the design spec §6 Step 1.
+# Released experiment configuration schema.
+# Every experiment must be invokable with one config conforming to this schema.
 #
 # The runner validates the loaded config against this schema. Validation
 # failures (especially the FORBIDDEN_KEYS checks) MUST abort execution loudly.
@@ -23,7 +22,7 @@ optional_fields:
   - notes               # free-form
 
 # === ISOLATION CHECK  ===
-# Per the design spec §0 rules 1-3.
+# These guards prevent accidental protocol drift and hidden subsampling.
 # The runner MUST reject any config containing these keys/values:
 
 FORBIDDEN_KEYS:
@@ -59,7 +58,7 @@ FORBIDDEN_DATASETS:
 promotion_schema:
   required:
     - score_weights         # {w1..w5} for relevance / uncertainty / EIG / hist_utility / detail_cost
-    - decision_mode         # "llm" (V4 main) | "fixed_threshold" (A5 ablation)
+    - decision_mode         # "llm" (full system) | "fixed_threshold" (A5 ablation)
     - promotion_budget      # max simultaneously-PROMOTED nodes
   optional:
     - decision_log_path     # where to dump structured promotion decisions

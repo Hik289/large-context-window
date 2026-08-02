@@ -1,7 +1,6 @@
-"""V4 Hierarchy Builder.
+"""UltraMem source-level dual-view node builder.
 
-For Step 3 we focus on the L0 level only: turn every rag L0 record into a
-DualNode by:
+The builder converts each source-level record into a ``DualNode`` by:
 
   - detailed_text = the original full L0 body (canonical_label + raw_text)
   - distilled_text = a short LLM-generated summary via the `chat_low` alias
@@ -197,8 +196,8 @@ def build_l0_dualnodes(
 
     Returns a list of DualNodes (one per input record). Failed-to-distill
     records still produce a DualNode but with `distilled_text == ""` and the
-    error captured in `extra["distill_error"]`. The Step 3 acceptance check
-    will catch these and fail the run.
+    error captured in `extra["distill_error"]`. Contract validation will catch
+    these nodes and fail the run.
     """
     enc = _get_enc()
 

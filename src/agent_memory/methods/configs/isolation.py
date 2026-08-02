@@ -1,12 +1,13 @@
-"""V4 Isolation Checks.
+"""Released experiment-protocol isolation checks.
 
-Enforces hard configuration constraints (the design spec §0) at config-load time:
+Enforces hard configuration constraints at config-load time:
 
 - No governance / RBAC / memory_access fields
 - No LoCoMo / LoCoMo+ / subset / sample / max-N keys
 - No silent low-tier fallback for high-tier alias
 
-Any forbidden field MUST raise V4ConfigError (a subclass of RuntimeError so it
+Any forbidden field must raise ``V4ConfigError`` (a retained compatibility name
+and subclass of ``RuntimeError``) so it
 propagates up to the runner and aborts the job with a clear message).
 
 Usage:
@@ -52,7 +53,7 @@ ALLOWED_METHODS = {
 
 
 class V4ConfigError(RuntimeError):
-    """Raised when V4 isolation rules are violated."""
+    """Raised when the released experiment protocol is violated."""
 
 
 # -----------------------------------------------------------------------
@@ -82,7 +83,7 @@ def _normalize(s: Any) -> str:
 
 
 def validate_config(config: Dict[str, Any]) -> None:
-    """Validate a V4 config. Raises V4ConfigError on any violation."""
+    """Validate an experiment config; raise on any protocol violation."""
     if not isinstance(config, dict):
         raise V4ConfigError(f"config must be a dict, got {type(config).__name__}")
 
@@ -102,7 +103,7 @@ def validate_config(config: Dict[str, Any]) -> None:
     dataset = _normalize(config.get("dataset", ""))
     if dataset in {_normalize(d) for d in FORBIDDEN_DATASETS}:
         raise V4ConfigError(
-            f"dataset={config.get('dataset')!r} is FORBIDDEN by V4 protocol (the design spec §0 rule 2 + §2.2). "
+            f"dataset={config.get('dataset')!r} is FORBIDDEN by the released protocol. "
             "Use own_full or erag_{50,100,150,250}m only."
         )
     if dataset not in {_normalize(d) for d in ALLOWED_DATASETS}:
@@ -117,7 +118,7 @@ def validate_config(config: Dict[str, Any]) -> None:
         if key_norm in {_normalize(f) for f in FORBIDDEN_KEYS}:
             violations.append((path, key, value))
     if violations:
-        msg = "FORBIDDEN config keys detected (the design spec §0):\n"
+        msg = "FORBIDDEN config keys detected by the released protocol:\n"
         for path, k, v in violations[:20]:
             sv = json.dumps(v)[:60] if not isinstance(v, (dict, list)) else f"<{type(v).__name__}>"
             msg += f"  {path}: {k}={sv}\n"
@@ -133,7 +134,7 @@ def validate_config(config: Dict[str, Any]) -> None:
                 if f_norm == v_norm or (len(f_norm) >= 6 and f_norm in v_norm):
                     raise V4ConfigError(
                         f"FORBIDDEN dataset reference at {path}={value!r} (matches {f!r}). "
-                        "V4 main runs may not reference LoCoMo / LoCoMo+ / subset paths."
+                        "Released main runs may not reference LoCoMo / LoCoMo+ / subset paths."
                     )
 
     # 6. Models block sanity
@@ -230,7 +231,7 @@ def _self_test() -> int:
                          answer="chat_high", judge="judge"),
              paths=dict(corpus="x", queries="x", chroma="x", output="x", manifest="x"),
              tokenizer="cl100k_base",
-         ), True, "FORBIDDEN by V4 protocol"),
+        ), True, "FORBIDDEN by the released protocol"),
         ("invalid max_queries subsample",
          dict(
              run_id="r1", dataset="own_full", method="V4", seed=42,
