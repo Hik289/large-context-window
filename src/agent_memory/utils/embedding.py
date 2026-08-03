@@ -13,7 +13,7 @@ _LOCAL_MODEL_CACHE: dict = {}
 def _cfg_get(cfg: Optional[DictConfig], key: str, default: str = "") -> str:
     if cfg is None:
         return default
-    block = getattr(cfg, "openai", None)
+    block = getattr(cfg, "embedding", None)
     if block is None:
         return default
     return getattr(block, key, default)

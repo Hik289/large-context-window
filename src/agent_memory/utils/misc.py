@@ -11,11 +11,7 @@ def index_to_id(key: str) -> str:
 
 
 def count_tokens(content: str) -> int:
-    """Token count using OpenAI's ``cl100k_base`` encoding.
-
-    The encoding matches GPT-3.5 / GPT-4 tokenization and is used as a
-    sensible default when a specific model isn't known.
-    """
+    """Count tokens with the package's default ``cl100k_base`` encoding."""
     enc = tiktoken.get_encoding("cl100k_base")
     return len(enc.encode(content))
 

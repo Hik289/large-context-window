@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 
@@ -45,3 +46,22 @@ def test_config_command_reports_active_file() -> None:
     assert "Model config:" in completed.stdout
     assert "chat_low:" in completed.stdout
     assert "PLACEHOLDER" in completed.stdout
+
+
+def test_doctor_json_is_safe_and_machine_readable(capsys) -> None:
+    exit_code = main(["doctor", "--json"])
+    report = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert report["package"] == "UltraMem"
+    assert report["core_ready"] is True
+    assert report["models_ready"] is False
+    assert "api_key" not in json.dumps(report).lower()
+
+
+def test_package_root_exposes_lightweight_method_api() -> None:
+    from agent_memory import DualNode, TokenLedger, validate_batch
+
+    assert DualNode.__name__ == "DualNode"
+    assert TokenLedger.__name__ == "TokenLedger"
+    assert callable(validate_batch)

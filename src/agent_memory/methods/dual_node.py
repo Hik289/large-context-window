@@ -249,7 +249,7 @@ def _self_test() -> int:
         detailed_tokens=12,
         source_evidence_ids=["ev_01"],
         state=NODE_STATE_LIGHT,
-        distilled_text_model_alias="gpt_5_4_mini",
+        distilled_text_model_alias="chat_low",
         distilled_text_model_status="ACTIVE",
     )
     cases.append(("valid L0", n1, True))

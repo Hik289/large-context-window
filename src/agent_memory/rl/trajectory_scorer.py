@@ -9,11 +9,11 @@ where the components capture, respectively, evidence coverage, retrieval
 overlap and cumulative budget consumed.
 """
 
-from typing import List, Dict, Tuple
 from dataclasses import dataclass
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from trajectory_utils import Trajectory
+from statistics import mean
+from typing import List, Set, Tuple
+
+from .trajectory_utils import Trajectory
 
 
 @dataclass
@@ -50,14 +50,43 @@ class TrajectoryScorer:
         self,
         trajectory: Trajectory,
     ) -> float:
-        """
-        Score how well the retrieved memories ground the gold answer.
+        """Score evidence recall, with answer-token recall as a fallback.
 
-        Currently a placeholder: future versions can compare ground-truth
-        answer text against the retrieved memory contents.
+        Evidence identifiers are preferred when the trajectory provides them.
+        Otherwise the score is the fraction of normalized answer tokens present
+        in the retrieved text. Both paths return a value in ``[0, 1]``.
         """
-        ## TO IMPLEMENT (using ground truth answer matching?)
-        return
+        retrieved_ids: Set[str] = set()
+        retrieved_text: List[str] = []
+        for memory in trajectory.retrieved_memories:
+            for key in ("id", "index", "node_id", "source_evidence_id"):
+                value = memory.get(key)
+                if value:
+                    retrieved_ids.add(str(value))
+            for value in memory.get("source_evidence_ids", []) or []:
+                retrieved_ids.add(str(value))
+            text = memory.get("value") or memory.get("content") or memory.get("document")
+            if text:
+                retrieved_text.append(str(text))
+
+        expected_ids = {str(value) for value in trajectory.evidence if value}
+        if expected_ids:
+            return len(expected_ids & retrieved_ids) / len(expected_ids)
+
+        answer_tokens = self._tokens(trajectory.ground_truth or "")
+        if not answer_tokens:
+            return 0.0
+        memory_tokens = self._tokens(" ".join(retrieved_text))
+        return len(answer_tokens & memory_tokens) / len(answer_tokens)
+
+    @staticmethod
+    def _tokens(text: str) -> Set[str]:
+        """Return lowercase alphanumeric tokens used by lexical scoring."""
+        return {
+            "".join(char for char in token.lower() if char.isalnum())
+            for token in text.split()
+            if any(char.isalnum() for char in token)
+        }
 
     def compute_redundancy(
         self,
@@ -135,7 +164,7 @@ class TrajectoryScorer:
         GRPO-style advantages: each trajectory minus the group mean score.
         """
         scores = [self.score_trajectory(t).total_score for t in trajectories]
-        mean_score = float(np.mean(scores))
+        mean_score = mean(scores) if scores else 0.0
         return [s - mean_score for s in scores]
 
 

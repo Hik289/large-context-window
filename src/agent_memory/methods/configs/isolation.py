@@ -206,8 +206,8 @@ def _self_test() -> int:
             "valid V4 own_full",
             dict(
                 run_id="r1", dataset="own_full", method="V4", seed=42,
-                models=dict(hierarchy_low="gpt_5_4_mini", hierarchy_high="gpt_5_4",
-                            answer="gpt_5_4", judge="gpt_4o_mini"),
+                models=dict(hierarchy_low="chat_low", hierarchy_high="chat_high",
+                            answer="chat_high", judge="judge"),
                 paths=dict(corpus="x", queries="x", chroma="x", output="x", manifest="x"),
                 tokenizer="cl100k_base",
                 promotion=dict(score_weights={}, decision_mode="llm", promotion_budget=100),

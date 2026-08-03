@@ -1,12 +1,12 @@
 """LLM-prompted retrieval policy used as a strong, non-trainable baseline."""
 
-from typing import List, Optional, Tuple
-from dataclasses import dataclass
+from typing import List, Optional
 from omegaconf import DictConfig
 
+from agent_memory.methods.configs.model_resolver import resolve
 from agent_memory.utils.llm import get_general_chat_completion_client
 from agent_memory.core.memory_entry import MemoryEntry
-from trajectory_utils import RetrievalState, RetrievalAction, ActionType
+from .trajectory_utils import RetrievalState, RetrievalAction, ActionType
 import logging
 import re
 
@@ -53,12 +53,13 @@ class LLMPolicy:
         ):
         self.cfg = cfg
         self.client = get_general_chat_completion_client(cfg)
+        self.model_name = resolve("chat_low")["model"]
         self.max_primary = max_primary_actions
         self.max_cue = max_cue_actions
 
         # Last prompt/response retained for debugging only.
         self.last_prompt = None
-        self.last_respones = None
+        self.last_response = None
 
     def select_action(
         self,
@@ -99,18 +100,18 @@ class LLMPolicy:
 
         try:
             response = self.client.chat.completions.create(
-                model=self.cfg.openai.deployment_name,
+                model=self.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=10,
                 temperature=0.0,
             )
             selection = response.choices[0].message.content.strip()
-            self.last_respones = selection  # keep for debugging
+            self.last_response = selection
 
             return self._parse_selection(selection, available_primary, available_cue)
 
-        except Exception as e:
-            print(f"LLM policy error: {e}, falling back to greedy")
+        except Exception as exc:
+            logger.warning("LLM policy failed; using greedy retrieval: %s", exc)
             return self._fallback_greedy(available_primary, available_cue)
 
     def _format_retrieved(self, retrieved_memories: Optional[List[dict]]) -> str:

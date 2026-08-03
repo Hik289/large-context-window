@@ -103,16 +103,8 @@ def _ensure_general_client():
 
 
 def _read_api_key(spec: Dict[str, Any]) -> str:
-    import json
-    import os
-    k = os.environ.get(spec.get("api_key_env", "LLM_API_KEY"))
-    if k:
-        return k
-    p = "./api_config.json"
-    if os.path.exists(p):
-        with open(p) as f:
-            return json.load(f).get("primary_experiment_model", {}).get("api_key", "")
-    return ""
+    """Read a key only from the environment named by the public alias spec."""
+    return os.environ.get(spec.get("api_key_env", "LLM_API_KEY"), "")
 
 
 def llm_distill_one(body: str, max_retries: int = 4) -> Dict[str, Any]:

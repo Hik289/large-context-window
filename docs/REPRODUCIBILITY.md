@@ -11,7 +11,8 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 
 pytest
-python -m agent_memory --version
+ultramem --version
+ultramem doctor
 python -m agent_memory.methods.dual_node
 python -m agent_memory.methods.token_ledger
 python -m agent_memory.methods.configs.isolation

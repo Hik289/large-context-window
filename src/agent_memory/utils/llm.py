@@ -5,8 +5,6 @@ from typing import Any, Dict, Optional, Sequence, Union
 
 from omegaconf import DictConfig
 from openai import ContentFilterFinishReasonError, OpenAI
-import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from agent_memory.utils.token_usage import TokenUsageCallback
 
@@ -24,8 +22,8 @@ def _cfg_get(cfg: Optional[DictConfig], section: str, key: str, default: str = "
 
 def get_general_chat_completion_client(cfg: Optional[DictConfig] = None) -> OpenAI:
     """Build a general chat-completions-style client."""
-    base_url = os.getenv("LLM_API_BASE") or _cfg_get(cfg, "openai", "llm_api_base")
-    api_key = os.getenv("LLM_API_KEY") or _cfg_get(cfg, "openai", "llm_api_key")
+    base_url = os.getenv("LLM_API_BASE") or _cfg_get(cfg, "llm", "api_base")
+    api_key = os.getenv("LLM_API_KEY") or _cfg_get(cfg, "llm", "api_key")
     if not base_url or not api_key:
         raise RuntimeError(
             "General LLM API base/key not configured. "
@@ -65,10 +63,11 @@ class ChatCompletionModel:
 
     def _load_hf_model(self, model_name: str):
         """Load a Hugging Face causal LM and tokenizer."""
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
         if model_name.startswith("hf:"):
             model_name = model_name[3:]
-        if "/" not in model_name and model_name.startswith("Qwen"):
-            model_name = f"Qwen/{model_name}"
 
         print(f"Loading Hugging Face model: {model_name}")
 
@@ -113,6 +112,7 @@ class ChatCompletionModel:
     def _invoke_hf(self, messages: list, source: str = "Unknown", **kwargs) -> str:
         """Run a Hugging Face completion with retries on transient errors."""
         import time
+        import torch
 
         max_retries = 3
         retry_delay = 1.0

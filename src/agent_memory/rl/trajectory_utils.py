@@ -14,19 +14,20 @@ covers (subset currently active):
 State per step: ``(query, retrieved_memories, frontier, budget)``.
 """
 
+from __future__ import annotations
+
 import json
-from typing import List, Dict, Optional, Tuple, Set
+from typing import TYPE_CHECKING, List, Dict, Optional, Tuple, Set
 from dataclasses import dataclass, asdict, field
 from enum import Enum
-import numpy as np
 from omegaconf import DictConfig
 import random
 import math
 import logging
 
-from agent_memory.client import MemoryClient
-from agent_memory.core.memory_entry import MemoryEntry
-from agent_memory.core.memory import QueryMode
+if TYPE_CHECKING:
+    from agent_memory.client import MemoryClient
+    from agent_memory.core.memory_entry import MemoryEntry
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +159,8 @@ class TrajectoryCollector:
 
     def get_client(self, user_id: str) -> MemoryClient:
         """Memoised MemoryClient lookup keyed by user_id."""
+        from agent_memory.client import MemoryClient
+
         client = self.client_cache.get(user_id)
         if client is None:
             client = MemoryClient(self.cfg, user_id=user_id)
@@ -200,13 +203,19 @@ class TrajectoryCollector:
         """
         Sample pi(a_t | s_t).
 
-        Currently a heuristic + optional softmax stochasticity. A trained
-        policy can be plugged in later via ``policy_network``.
+        Uses a supplied policy when present and otherwise applies score-based
+        selection with optional softmax exploration.
         """
 
         if policy_network is not None:
-            # Hook for a learnt policy network — not yet implemented.
-            pass
+            action = policy_network.select_action(
+                state=state,
+                primary_candidates=primary_candidates,
+                cue_candidates=cue_candidates,
+            )
+            if not isinstance(action, RetrievalAction):
+                raise TypeError("policy_network.select_action() must return RetrievalAction")
+            return action
 
         # Drop already-collected memories to avoid duplication.
         already = state.retrieved_memories

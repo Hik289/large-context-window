@@ -1,29 +1,18 @@
-"""
-MemoryClient — public-facing facade requiring only an API key.
+"""Local document ingestion and memory operations."""
 
-Recent changes (brief):
- - Pruned unused imports (curses.meta, regex.P, chromadb Where) for clarity.
- - Added os and OmegaConf imports for the default config builder.
- - Fixed up the API-key utility import name.
- - Collapsed duplicate add/query methods into single ones that auto-inject user_id.
- - Added comments explaining where user_id is injected and config is auto-built.
-"""
-
+import logging
+from datetime import datetime
 from pathlib import Path
-from platform import processor
 from typing import Any, Callable, Dict, List, Optional, Type, Union
-# from joblib import Memory
-from omegaconf import DictConfig 
+
+from omegaconf import DictConfig
+
 from agent_memory.builder.document_memory_builder import DocumentMemoryBuilder
 from agent_memory.builder.chat_memory_builder import ChatMemoryBuilder, NormalizedChatMessage
 from agent_memory.builder.email_memory_builder import EmailMemoryBuilder, NormalizedEmail
 from agent_memory.builder.memory_builder import MemoryBuilder
 from agent_memory.builder.memory_builder_registry import MemoryBuilderRegistry
 from agent_memory.core.memory import AgentMemory, QueryMode
-from typing import Dict, List, Optional, Union
-from omegaconf import DictConfig
-
-from agent_memory.builder.chat_memory_builder import ChatMemoryBuilder
 from agent_memory.core.memory_entry import MemoryEntry
 from agent_memory.core.segment import Segment
 from agent_memory.core.source_cue_generator import SourceCueGenerator
@@ -34,47 +23,22 @@ from agent_memory.utils.llm import ChatCompletionModel
 from agent_memory.utils.log import log_segments
 from agent_memory.utils.misc import merge_metadata
 
-import logging
-from datetime import datetime
-
 logger = logging.getLogger(__name__)
 
 
 class LocalMemoryClient:
-    """Client facade that exposes memory operations behind an API key.
-
-    Internal rationale:
-    - For internal deployments we always sit on top of the local Chroma store.
-    - Callers supply only an API key; configuration is built behind the scenes.
-    - The user_id derived from the API key is silently injected into metadata + filters.
-    """
+    """High-level operations over an in-process, user-scoped memory store."""
 
     def __init__(
         self,
         cfg: DictConfig,
         user_id: str,
     ):
-        """
-        Construct the memory facade.
-
-        Args:
-            cfg: Configuration object
-            api_key: API key for authentication (will derive user_id)
-        """
-
-        # Stash the configuration object.
+        """Initialize the configured local store and processing pipeline."""
         self.cfg = cfg
-
-        # Stash the user_id.
         self.user_id = user_id
-
-        # Bring up the underlying agent memory.
         self._agent_memory = AgentMemory(cfg, user_id=user_id)
-
-        # Bring up the LLM client.
         self._model_client = ChatCompletionModel(cfg)
-
-        # Memory builder registry.
         self.memory_builder_registry = MemoryBuilderRegistry()
         self.memory_builder_registry.register("markdown", DocumentMemoryBuilder)
         self.memory_builder_registry.register("doc", DocumentMemoryBuilder)
@@ -82,13 +46,7 @@ class LocalMemoryClient:
         self.memory_builder_registry.register("default", ChatMemoryBuilder)
         self.memory_builder_registry.register("email", EmailMemoryBuilder)
 
-        # initialize the memory builder
-        # self._memory_builder = ChatMemoryBuilder(cfg, self._agent_memory)
-
-        # Bring up the processor registry.
         self.processor_registry = ProcessorRegistry()
-
-        # Bring up the source-cue generator used by source-aware retrieval.
         self._source_cue_generator = SourceCueGenerator(cfg, self._model_client)
 
     def _resolve_builder(self, builder: Optional[Union[str, Type[MemoryBuilder], MemoryBuilder]], default_type: str = "default") -> MemoryBuilder:
@@ -128,32 +86,24 @@ class LocalMemoryClient:
         # Most file types currently route to the chat builder, but the table is extensible.
         # Emails are closer to documents structurally; a dedicated email builder
         # (decisions, attendees, ...) can be plugged in later.
-        # NOTE (Stage 0 Priority-0 bug #2 fix): the previous mapping pointed `excel`,
-        # `powerpoint`, `html`, `json`, `yaml`, `xml` at builder_type values that were
-        # never registered, causing `ValueError: No MemoryBuilder registered for ...`
-        # for any of those file types. All of those types are structured-text
-        # documents whose text extraction is handled by the corresponding Processor
-        # (ExcelProcessor / PowerPointProcessor / TextProcessor / ...). Once the
-        # processor returns Segments, DocumentMemoryBuilder is content-agnostic and
-        # can ingest them, so the safe fix is to route them all to the existing
-        # "doc" builder. Specialized table/ppt/html builders can be added later.
+        # Structured file processors emit text segments consumed by the document builder.
         builder_type_mapping = {
             "default": "chat",
             "chat": "chat",
             "markdown": "markdown",
             "word": "doc",
-            "excel": "doc",        # was "table" -- not registered
-            "powerpoint": "doc",   # was "ppt"   -- not registered
+            "excel": "doc",
+            "powerpoint": "doc",
             "pdf": "doc",
             "text": "doc",
             "richtext": "doc",
-            "html": "doc",         # was "html"  -- not registered
-            "json": "doc",         # was "json"  -- not registered
-            "yaml": "doc",         # was "yaml"  -- not registered
+            "html": "doc",
+            "json": "doc",
+            "yaml": "doc",
             "toml": "doc",
             "config": "doc",
             "code": "doc",
-            "xml": "doc",          # was "xml"   -- not registered
+            "xml": "doc",
             "email": "doc",
         }
         logger.info(f"Detected file type: {file_type}")
