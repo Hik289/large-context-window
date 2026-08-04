@@ -2,40 +2,42 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Type, Union
 
 from omegaconf import DictConfig
 
-from agent_memory.builder.chat_memory_builder import NormalizedChatMessage
-from agent_memory.builder.email_memory_builder import NormalizedEmail
-from agent_memory.builder.memory_builder import MemoryBuilder
-from agent_memory.core.local_client import LocalMemoryClient
-from agent_memory.core.memory_entry import MemoryEntry
-from agent_memory.core.remote_client import RemoteMemoryClient
-from agent_memory.retriever.hybrid_retriever import HybridRetriever
-from agent_memory.retriever.plan_based_retriever import PlanBasedRetriever
-from agent_memory.retriever.prompted_policy_retriever import PromptedPolicyRetriever
-from agent_memory.retriever.query_reformulation_retriever import QueryReformulationRetriever
-from agent_memory.retriever.semantic_retriever import SemanticRetriever
+if TYPE_CHECKING:
+    from agent_memory.builder.chat_memory_builder import NormalizedChatMessage
+    from agent_memory.builder.email_memory_builder import NormalizedEmail
+    from agent_memory.builder.memory_builder import MemoryBuilder
+    from agent_memory.core.local_client import LocalMemoryClient
+    from agent_memory.core.memory_entry import MemoryEntry
+    from agent_memory.core.remote_client import RemoteMemoryClient
 
 
-_RETRIEVER_REGISTRY: Dict[str, type] = {
-    "semantic": SemanticRetriever,
-    "prompt": PromptedPolicyRetriever,
-    "plan": PlanBasedRetriever,
-    "reformulate": QueryReformulationRetriever,
-    "hybrid": HybridRetriever,
+_RETRIEVER_REGISTRY = {
+    "semantic": ("agent_memory.retriever.semantic_retriever", "SemanticRetriever"),
+    "prompt": (
+        "agent_memory.retriever.prompted_policy_retriever",
+        "PromptedPolicyRetriever",
+    ),
+    "plan": ("agent_memory.retriever.plan_based_retriever", "PlanBasedRetriever"),
+    "reformulate": (
+        "agent_memory.retriever.query_reformulation_retriever",
+        "QueryReformulationRetriever",
+    ),
+    "hybrid": ("agent_memory.retriever.hybrid_retriever", "HybridRetriever"),
 }
 
 
 class MemoryClient:
-    """Facade over an in-process store or a configured remote memory service.
+    """Facade over an in-process store or a remote UltraMem service.
 
     Pass ``cfg`` and ``user_id`` for local operation. Pass ``api_key`` for
-    remote add, query, and planner-query operations. Document processors and
-    named retrieval strategies run locally because they require the local
-    configuration and store.
+    remote add, query, and planner-query operations. Importing this class does
+    not load local vector-store, model, or document-processing dependencies.
     """
 
     def __init__(
@@ -47,23 +49,35 @@ class MemoryClient:
     ) -> None:
         if api_key and (cfg is not None or user_id is not None):
             raise ValueError("Choose either local configuration or a remote API key.")
-        if api_key:
-            self._client: LocalMemoryClient | RemoteMemoryClient = RemoteMemoryClient(
-                api_key=api_key,
+
+        self._is_remote = bool(api_key)
+        if self._is_remote:
+            from agent_memory.core.remote_client import RemoteMemoryClient
+
+            self._client: Any = RemoteMemoryClient(
+                api_key=api_key or "",
                 server_url=server_url,
             )
             return
+
         if cfg is None or not user_id:
             raise ValueError("Local MemoryClient requires both cfg and user_id.")
+        try:
+            from agent_memory.core.local_client import LocalMemoryClient
+        except ModuleNotFoundError as exc:
+            raise RuntimeError(
+                "Local mode requires retrieval and LLM dependencies. "
+                "Install with: pip install -e '.[retrieval,llm,documents]'"
+            ) from exc
         self._client = LocalMemoryClient(cfg, user_id)
 
     @property
     def is_remote(self) -> bool:
         """Return whether this instance uses the remote service adapter."""
-        return isinstance(self._client, RemoteMemoryClient)
+        return self._is_remote
 
     def _local(self, feature: str) -> LocalMemoryClient:
-        if not isinstance(self._client, LocalMemoryClient):
+        if self._is_remote:
             raise NotImplementedError(
                 f"{feature} requires local mode; initialize MemoryClient with cfg and user_id."
             )
@@ -157,12 +171,13 @@ class MemoryClient:
         """Run one of the registered local retrieval strategies."""
         local_client = self._local("advanced_query")
         try:
-            retriever_cls = _RETRIEVER_REGISTRY[query_type]
+            module_name, class_name = _RETRIEVER_REGISTRY[query_type]
         except KeyError as exc:
             supported = ", ".join(sorted(_RETRIEVER_REGISTRY))
             raise ValueError(
                 f"Unsupported query_type {query_type!r}. Choose one of: {supported}."
             ) from exc
+        retriever_cls = getattr(import_module(module_name), class_name)
         retriever = retriever_cls(local_client.cfg, memory_client=local_client)
         return retriever.retrieve(
             query=context,

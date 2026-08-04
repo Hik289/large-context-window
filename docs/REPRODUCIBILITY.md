@@ -56,7 +56,7 @@ directory or when maintaining multiple replay configurations. The packaged file 
 template only; unresolved placeholders are rejected before an API call.
 
 ```bash
-agent-memory config
+ultramem config
 ```
 
 This command prints the selected YAML path and model identifiers, but never API keys.

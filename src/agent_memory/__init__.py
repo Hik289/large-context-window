@@ -4,15 +4,12 @@ from importlib import import_module
 from typing import Any
 
 __version__ = "0.1.0"
+# Star imports expose only interfaces supported by the core installation.
 __all__ = [
-    "DualIndex",
     "DualNode",
     "DualNodeError",
     "MemoryClient",
     "TokenLedger",
-    "browser",
-    "methods",
-    "utils",
     "validate_batch",
     "validate_one",
     "__version__",
@@ -45,3 +42,8 @@ def __getattr__(name: str) -> Any:
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    """List both core exports and lazily available optional interfaces."""
+    return sorted(set(globals()) | set(_EXPORTS) | {"browser", "methods", "utils"})

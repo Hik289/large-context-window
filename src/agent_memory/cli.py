@@ -15,11 +15,28 @@ from . import __version__
 logger = logging.getLogger(__name__)
 
 _OPTIONAL_GROUPS = {
-    "retrieval": ("chromadb", "sentence_transformers"),
-    "llm": ("httpx", "openai", "dotenv"),
-    "documents": ("docx", "openpyxl", "pdfplumber", "pptx"),
-    "evaluation": ("pandas", "rouge_score", "sklearn"),
-    "figures": ("matplotlib",),
+    "retrieval": (
+        "chromadb",
+        "faiss",
+        "numpy",
+        "rank_bm25",
+        "sentence_transformers",
+        "tiktoken",
+    ),
+    "llm": ("dotenv", "httpx", "openai", "tenacity"),
+    "local-models": ("accelerate", "torch", "transformers"),
+    "documents": ("docx", "fitz", "markdownify", "openpyxl", "pdfplumber", "pptx"),
+    "evaluation": (
+        "bert_score",
+        "nltk",
+        "pandas",
+        "pyarrow",
+        "rouge_score",
+        "scipy",
+        "sklearn",
+    ),
+    "figures": ("matplotlib", "numpy"),
+    "dev": ("build", "pytest", "pytest_timeout"),
 }
 _REQUIRED_MODEL_ALIASES = {"chat_low", "chat_high", "judge"}
 

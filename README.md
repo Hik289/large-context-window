@@ -58,15 +58,18 @@ cd large-context-window
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -e ".[dev]"
+pip install -e .
 ```
 
-Install only the capabilities needed for a run:
+The core installation provides the dual-view data contracts, token ledger, CLI, and
+remote client without loading a vector database or model runtime. Add only the capability
+groups needed for a deployment:
 
 ```bash
-pip install -e ".[retrieval,llm]"       # indexing, retrieval, and model calls
-pip install -e ".[documents]"           # PDF, Office, Markdown, and text ingestion
-pip install -e ".[evaluation,figures]"  # evaluation and publication figures
+pip install -e ".[retrieval,llm,documents]"  # complete local memory pipeline
+pip install -e ".[local-models]"             # optional local model execution
+pip install -e ".[evaluation,figures]"       # evaluation and publication figures
+pip install -e ".[dev]"                      # tests and package build tools
 ```
 
 ## Quick Start
@@ -99,6 +102,32 @@ ledger = TokenLedger(run_id="demo", method="dual-view")
 ledger.record("retrieval", "local", input_tokens=7, output_tokens=0, wall_seconds=0.01)
 print(ledger.grand_total())
 ```
+
+## Client API
+
+`MemoryClient` provides one entry point for deployed and in-process operation. A core
+installation can connect to a compatible UltraMem service without importing local model,
+document, or vector-store dependencies:
+
+```python
+import os
+
+from agent_memory import MemoryClient
+
+memory = MemoryClient(
+    api_key=os.environ["ULTRAMEM_API_KEY"],
+    server_url=os.environ["ULTRAMEM_SERVER_URL"],
+)
+memory.add(
+    "Quarterly access reviews are due by the final business day.",
+    metadata={"source_id": "policy:access-review"},
+)
+matches = memory.query("When is the access review due?", top_k=5)
+```
+
+Local operation accepts a `DictConfig` plus a user-scoped identifier and exposes file,
+chat, email, planner, and advanced retrieval workflows. See the [API guide](docs/API.md)
+for supported operations, optional dependencies, and error behavior.
 
 ## General Model API
 
@@ -170,7 +199,7 @@ large-context-window/
 ├── scripts/              # evaluation and optional external integrations
 ├── figures/              # manuscript plotting utilities
 ├── tests/                # package and method checks
-└── docs/                 # artifact and reproducibility contracts
+└── docs/                 # API, artifact, and reproducibility contracts
 ```
 
 ## Artifact Scope
@@ -181,6 +210,7 @@ credentials, or provider account configuration. External datasets and optional b
 implementations retain their own licenses and access terms.
 
 - [Artifact contract](docs/ARTIFACT.md)
+- [API guide](docs/API.md)
 - [Reproducibility guide](docs/REPRODUCIBILITY.md)
 - [Evaluation boundary](docs/RESULTS.md)
 - [Contribution guide](CONTRIBUTING.md)

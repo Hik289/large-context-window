@@ -56,6 +56,15 @@ def test_doctor_json_is_safe_and_machine_readable(capsys) -> None:
     assert report["package"] == "UltraMem"
     assert report["core_ready"] is True
     assert report["models_ready"] is False
+    assert set(report["optional_groups"]) == {
+        "dev",
+        "documents",
+        "evaluation",
+        "figures",
+        "llm",
+        "local-models",
+        "retrieval",
+    }
     assert "api_key" not in json.dumps(report).lower()
 
 
@@ -65,3 +74,25 @@ def test_package_root_exposes_lightweight_method_api() -> None:
     assert DualNode.__name__ == "DualNode"
     assert TokenLedger.__name__ == "TokenLedger"
     assert callable(validate_batch)
+
+
+def test_core_install_does_not_import_optional_backends() -> None:
+    script = """
+import sys
+from agent_memory import *
+from agent_memory import MemoryClient
+from agent_memory.methods import *
+import agent_memory.utils.embedding
+
+client = MemoryClient(api_key="test-token", server_url="https://memory.example")
+assert client.is_remote
+for module in ("chromadb", "openai", "torch", "transformers"):
+    assert module not in sys.modules, module
+assert "agent_memory.core.local_client" not in sys.modules
+"""
+    subprocess.run([sys.executable, "-c", script], check=True)
+
+
+def test_optional_interfaces_remain_discoverable() -> None:
+    assert "DualIndex" in dir(agent_memory)
+    assert "MemoryClient" in dir(agent_memory)

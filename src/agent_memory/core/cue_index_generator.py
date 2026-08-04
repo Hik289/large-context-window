@@ -1,9 +1,14 @@
-from typing import List, Dict
-from omegaconf import DictConfig
-from pydantic import BaseModel, Field
-from agent_memory.utils.llm import ChatCompletionModel
+from __future__ import annotations
 
 import logging
+from typing import Dict, List
+
+from omegaconf import DictConfig
+from pydantic import BaseModel, Field
+
+from agent_memory.utils.llm import ChatCompletionModel
+
+logger = logging.getLogger(__name__)
 
 
 PROMPT_CUE_GENERATION = """You are a memory-indexing assistant optimized for knowledge retrieval. Your goal is to create "Cue Indices" that serve as semantic anchors for specific memories.
@@ -12,7 +17,7 @@ PROMPT_CUE_GENERATION = """You are a memory-indexing assistant optimized for kno
 For each memory provided, generate 1-3 short, meaningful CUE INDICES that can later help recall or reason about that memory. Provide the cue indices as a list of strings for each memory.
 
 # GUIDELINES
-1. **Definition**: A cue index is a concise phrase (2-4 words) that anchors a specific topic to a memory. It taskes the following structure: [Main Entity] + [Key Aspect].
+1. **Definition**: A cue index is a concise phrase (2-4 words) that anchors a specific topic to a memory. It uses the following structure: [Main Entity] + [Key Aspect].
     - The **Main Entity** is the primary person, domain, or object involved in the memory (the "Who" or "What").
     - The **Key Aspect** specifies the event, preference, action, state, or object associated with the entity.
     Examples of Main Entity + Key Aspect patterns:
@@ -22,7 +27,7 @@ For each memory provided, generate 1-3 short, meaningful CUE INDICES that can la
         - [Person] + [Object/Relation] → "Alice research paper", "David guitar"
         - [Domain] + [Attribute/Artifact] → "Project Orion timeline", "Product X features"
 
-2. **Specificity**: Avoid generic single words like "summer", "happiness", or "project meeting". Every cue index must be contextually anchored to a the main entity including person, event, or domain mentioned in the memory. For example, instead of "hiking," use "Sarah hiking." And the key aspect should reflect a concrete topic rather than vague concepts. For example, use "Mike mental health problems" instead of "Mike feelings."
+2. **Specificity**: Avoid generic single words like "summer", "happiness", or "project meeting". Every cue index must be contextually anchored to the main entity, event, or domain mentioned in the memory. For example, instead of "hiking," use "Sarah hiking." The key aspect should reflect a concrete topic rather than a vague concept. For example, use "Mike mental health problems" instead of "Mike feelings."
 3. **Atomicity**: Each cue index must represent a single, indivisible aspect. Do not overload a cue with timestamps, specific numbers, or multiple descriptors. For example, use "Mike birthday party" instead of "Mike birthday party 2023". Avoid overspecification that limits generalizability.
 4. **Distinct Facets**: A memory could have multiple cue indices, each focusing on a different aspect of the memory to provide diverse viewpoints. Ideally, cue indices of one memory should not overlap in meaning. Each index must target a completely different dimension of the memory. Avoid generating cue indices that are similar to each other for the same memory. For example, don't create both "Project Phoenix kickoff" and "Project Phoenix launch" for the same memory.
 5. **Uniqueness**: Do not repeat the primary memory index as a cue index.
@@ -51,114 +56,30 @@ Cue indices: ["Emma swimming"]
 
 """
 
-# TODO: Refactor to use this prompt for entity-centric cue generation
-PROMPT_CUE_GENERATION_ENTITY = """
-You are a memory-indexing assistant that extracts ENTITY INDICES for an agent memory system.
-
-Entity indices are concrete, identifiable entities explicitly mentioned in the memory.
-They are used for entity-level lookup, filtering, and grounding.
-
-# TASK
-For each memory provided below, extract 0–5 ENTITY INDICES that represent
-important concrete entities mentioned in the memory.
-
-# ENTITY DEFINITION
-An entity is a specific, identifiable object, such as:
-- Person (e.g., individual names)
-- Organization or team
-- Project or product name
-- System, service, or platform
-- Dataset, model, or tool
-
-Entities must be explicitly present in the memory text.
-
-# GUIDELINES
-
-1. What to Extract
-Extract entities that:
-- Play a meaningful role in the memory
-- Are useful for filtering, lookup, or grounding
-- Are explicitly mentioned (no inference)
-
-2. Entity Granularity
-- Use the most specific form mentioned in the memory
-- Prefer canonical names (no abbreviations unless written that way)
-
-Examples:
-- Prefer "M365Research" over "M365"
-- Prefer "Atlas" over "the project"
-
-3. Entity Count
-- Extract at most 5 entities
-- If many entities exist, prioritize:
-  - People
-  - Owning organizations or teams
-  - Core projects or systems
-
-4. Avoid
-- Abstract roles or concepts (e.g., "stakeholders", "collaboration")
-- Actions, events, or relationships
-- Paraphrases or inferred entities
-- Duplicates
-
-# OUTPUT FORMAT
-Return a list of entity strings.
-Do NOT include explanations, categories, or extra text.
-
-# EXAMPLES
-
-Memory:
-"The key stakeholders involved in the Atlas project are Xuchao, Molly, Dongge, Victor, Rujia, Chetan, and M365Research."
-
-Entity indices:
-["Atlas", "Xuchao", "Molly", "Dongge", "Victor", "Rujia", "Chetan", "M365Research"]
-
-Memory:
-"Jane updated the project timeline after client feedback."
-
-Entity indices:
-["Jane"]
-
-Memory:
-"The LLM was retrained to reduce hallucinations."
-
-Entity indices:
-[]
-
-# MEMORIES TO PROCESS
-{memories}
-
-
-"""
 
 class MemoryCueIndices(BaseModel):
-    memory_index: str = Field(
-        description="The primary memory index"
-    )
+    memory_index: str = Field(description="The primary memory index")
     cue_indices: List[str] = Field(
         description="List of cue indices generated for this memory"
     )
+
 
 class BatchCueIndices(BaseModel):
     results: List[MemoryCueIndices] = Field(
         description="List of cue indices for each memory"
     )
 
+
 class CueIndexGenerator:
-    """
-    Cue index generator for memories.
+    """Backward-compatible cue index generator for memories.
 
-    DEPRECATED: Since the single-step extraction migration, cue indices are produced
-    alongside the primary indices in one LLM call for better efficiency and coherence.
-    This class lingers for backward compatibility and will be removed in a future release.
-
-    Prefer the integrated cue index generation inside MemoryBuilder.
+    New builders generate cue and primary indices in one model call. This class remains
+    available for callers using the earlier two-stage workflow.
     """
 
     def __init__(self, cfg: DictConfig, model_client: ChatCompletionModel):
         self.cfg = cfg
-        self._model_client = model_client  # LLM client used for generation
-        pass
+        self._model_client = model_client
 
     def generate_cue_indices_batch(
         self,
@@ -196,13 +117,14 @@ class CueIndexGenerator:
             )
 
         except Exception:
-            logging.warning("Cue index generation failed, returning empty cue indices.")
+            logger.warning("Cue index generation failed; returning empty cue indices.")
             result = BatchCueIndices(
                 results=[
                     MemoryCueIndices(
                         memory_index=mem["index"],
                         cue_indices=[],
-                    ) for mem in memories
+                    )
+                    for mem in memories
                 ]
             )
 

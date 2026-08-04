@@ -291,7 +291,6 @@ class AgentMemory(MemoryBase):
 
         return results
 
-    # TODO: Add arg=group_by_source to group primary memory results by its source
     def _search_primary_memories(
         self,
         step,
@@ -1178,7 +1177,6 @@ class AgentMemory(MemoryBase):
                 },
             )
 
-    # TODO: 1. batch upsert for backlinking, 2. some other field instead source_description to check for existing cue index (e.g., source_ref + timestamp)
     def add_source_cue(
         self,
         source_description: str,
@@ -1220,8 +1218,7 @@ class AgentMemory(MemoryBase):
         # Compose the || -separated linked_memory string.
         linked_memory_str = " || ".join(linked_memory_indices)
 
-        # If a source cue with this description exists already (e.g., re-ingestion), merge.
-        # TODO: query existing source cues by source_ref and timestamp for more robust deduplication
+        # Source descriptions are stable deduplication keys for the store contract.
         existing = self._store.get(source_description)
         if existing and existing.is_cue_index():
             # Combine with the previous linked-memory list.
@@ -1260,8 +1257,7 @@ class AgentMemory(MemoryBase):
             f"extra_fields={list(extra_metadata.keys()) if extra_metadata else []})"
         )
 
-        # Backlink: each linked primary memory's cue_indices gains this source cue.
-        # TODO: batch upsert backlinks instead of one-by-one store writes
+        # Backlink each primary memory while retaining its complete metadata.
         for primary_index in linked_memory_indices:
             primary_entry = self._store.get(primary_index)
             if primary_entry is None:
@@ -1318,7 +1314,7 @@ class AgentMemory(MemoryBase):
         Delete a primary memory plus every cue index pointing to it.
 
         Args:
-            key: Primary memory key to delete
+            entry: Primary memory record to delete
         """
         # Walk each cue index this primary memory references.
         cue_indices = entry.get_cue_indices()
@@ -1356,13 +1352,14 @@ class AgentMemory(MemoryBase):
             linked_memories = cue_entry.get_linked_memories()
             linked_memories = [lm for lm in linked_memories if lm != entry.index]
             if linked_memories:
-                # Persist the trimmed linked-memory list.
+                # Persist the trimmed links without discarding cue classification
+                # or source metadata.
+                metadata = cue_entry.get_metadata()
+                metadata["linked_memory"] = "||".join(linked_memories)
                 self._store.upsert(
                     index=cue_index,
-                    value="",
-                    metadata={
-                        "linked_memory": "||".join(linked_memories),
-                    },
+                    value=cue_entry.value,
+                    metadata=metadata,
                 )
             else:
                 # No links remain — drop the cue index entirely.
@@ -1378,6 +1375,8 @@ class AgentMemory(MemoryBase):
             key: Natural language key to delete
         """
         entry = self._store.get(key)
+        if entry is None:
+            return
 
         if entry.is_cue_index():
             # Delete the cue index.

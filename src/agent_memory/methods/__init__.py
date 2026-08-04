@@ -4,11 +4,9 @@ from importlib import import_module
 from typing import Any
 
 __all__ = [
-    "DualIndex",
     "DualNode",
     "DualNodeError",
     "TokenLedger",
-    "build_l0_dualnodes",
     "read_nodes_jsonl",
     "validate_batch",
     "validate_one",
@@ -36,3 +34,8 @@ def __getattr__(name: str) -> Any:
     value = getattr(import_module(f"{__name__}.{module_name}"), attribute)
     globals()[name] = value
     return value
+
+
+def __dir__() -> list[str]:
+    """List core and optional method components without importing backends."""
+    return sorted(set(globals()) | set(_EXPORTS))

@@ -1,12 +1,16 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
-from typing import Callable, List, Optional
 
-from agent_memory.core.memory_entry import MemoryEntry
-from typing import Any, Dict, List, Optional
+import logging
+from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Callable, Dict, List, Optional, Union
+
 from omegaconf import DictConfig
+from openai import BadRequestError
 from pydantic import BaseModel, Field
+
 from agent_memory.core.cue_index_generator import CueIndexGenerator
+from agent_memory.core.memory import AgentMemory, QueryMode
 from agent_memory.core.memory_entry import MemoryEntry
 from agent_memory.core.predictive_cue_generator import PredictiveCueGenerator
 from agent_memory.utils.llm import ChatCompletionModel
@@ -16,62 +20,9 @@ from agent_memory.utils.memory import (
     generate_history,
     generate_metadata,
 )
-from agent_memory.utils.misc import get_current_timestamp
-from typing import Any, Dict, List, Optional, Union
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from omegaconf import DictConfig
-from pydantic import BaseModel, Field
-from agent_memory.core.cue_index_generator import CueIndexGenerator
-from agent_memory.core.memory import AgentMemory, QueryMode
-from agent_memory.utils.memory import (
-    MemoryUpdateDecision,
-    generate_history,
-)
 from agent_memory.utils.misc import get_current_timestamp, normalize_content
-import logging
-from openai import BadRequestError
 
 logger = logging.getLogger(__name__)
-
-PROMPT_BUILD_MEMORY_OLD = """
-You are an expert fatual memory extraction assistant. Your goal is to extract factual memories from a conversation segment.
-
-# TASK: 
-Read the input conversation carefully, extract ALL factual memories that could be useful for future reference.
-
-Produce each memory as a key-value pair in the following format:
-
-MemIndex: memory index for retrieval
-MemValue: memory value with all the details supported directly from the given text.
-
-# GUIDELINES:
-1. Content and Scope:
-- Use only information explicitly mentioned in the context to create the factual memories.
-- Make sure to capture ALL factual information that could be useful for future retrieval. When in doubt, create more factual memories rather than fewer. Capture more details rather than less.
-- Do not include greetings, small talk, or filler in the memories.
-- Be exhaustive when extracting factual memories from the conversation, do not miss any details, unless they are explicitly irrelevant and unlikely to be useful for future reference (like greetings or small talk).
-- Split distinct facts into separate entries.
-- Capture all details about people's identities, experiences, past or upcoming events, intentions, hobbies, preferences, states, beliefs, goals, or future plans that may be useful for answering later questions.
-- Make sure to include time of events, location, or other contextual details in the MemValue if mentioned.
-- If images are included in the conversation, consider the images as a part of the text. DO NOT create a memory entry solely to describe the image. Instead, extract useful facts from the image (e.g., objects, locations) and merge them naturally into relevant memories. For example, if a conversation contains an image showing a birthday cake with candles, include information about that image in the relevant memory about the birthday event, such as "MemIndex: Alice celebrated her birthday\nMemValue: Alice celebrated her birthday with her friends at home, including a birthday cake with candles".
-- If the conversation is between a user and an AI assistant, focus on the user's inputs and the overall context rather than the assistant's responses.
-
-2. Format and Style:
-- The MemIndex must be a short, human-readable phrase that is self-contained and unambiguous.
-- Always include the specific context (e.g., domain, or entity) from the source text in the MemIndex to avoid vague terms. For example, instead of "Vacation", use "Alice's Japan Vacation". Instead of "Mike's plans", use "Mike's summer plans to visit Europe".
-- Write MemValue as one or two full factual sentences, capturing all relevant details. 
-    - Ensure wording is neutral and factual.
-    - Use the original wordings from the conversation when possible.
-    - Replace pronouns with specific names or entities to ensure clarity.
-    - Handling times and dates in the MemValue: When dates and times are mentioned in the conversation, replace relative times (e.g., "yesterday", "next week", "last year") with absolute dates based on the timestamp of the conversation. For example, if the conversation timestamp is "16 June, 2023" and it mentions something happened "last year", convert it to "2022" in the MemValue.
-
-Timestamp of conversation: {timestamp}
-
-Input Conversation:
-{content}
-
-Output:
-"""
 
 # Efficient prompt for turn-based memory extraction
 PROMPT_BUILD_MEMORY = """
@@ -114,7 +65,7 @@ Cue Indices: 1-4 short phrases to enhance retrieval by capturing different aspec
         - [Person] + [Object/Relation] → "Alice research paper", "David guitar"
         - [Domain] + [Attribute/Artifact] → "Project Orion timeline", "Product X features"
 
-- **Specificity**: Avoid generic single words like "summer", "happiness", or "project meeting". Every cue index must be contextually anchored to a the main entity including person, event, or domain mentioned in the memory. For example, instead of "hiking," use "Sarah hiking." And the key aspect should reflect a concrete topic rather than vague concepts. For example, use "Mike mental health problems" instead of "Mike feelings."
+- **Specificity**: Avoid generic single words like "summer", "happiness", or "project meeting". Every cue index must be contextually anchored to the main entity, event, or domain mentioned in the memory. For example, instead of "hiking," use "Sarah hiking." The key aspect should reflect a concrete topic rather than a vague concept. For example, use "Mike mental health problems" instead of "Mike feelings."
 - **Atomicity**: Each cue index must represent a single, indivisible aspect. Do not overload a cue with timestamps, specific numbers, or multiple descriptors. For example, use "Mike birthday party" instead of "Mike birthday party 2023". Avoid overspecification that limits generalizability.
 - **Distinct Facets**: A memory could have multiple cue indices, each focusing on a different aspect of the memory to provide diverse viewpoints. Ideally, cue indices of one memory should not overlap in meaning. Each index must target a completely different dimension of the memory. Avoid generating cue indices that are similar to each other for the same memory. For example, don't create both "Project Phoenix kickoff" and "Project Phoenix launch" for the same memory.
 - **Uniqueness**: Do not repeat the primary memory index as a cue index.
@@ -625,24 +576,23 @@ class MemoryBuilder(ABC):
         # disambiguate with a timestamped suffix.
         existing_entry = self.agent_memory.get(updated_index)
         if existing_entry and updated_index != best_candidate.index:
-            updated_index = f"{updated_index}. (Added on {get_current_timestamp()}]"
+            updated_index = f"{updated_index}. (Added on {get_current_timestamp()})"
+
+        # Snapshot source cues before deletion so provenance survives a rename or merge.
+        retained_source_cues: List[MemoryEntry] = []
+        for cue_index in best_candidate.get_cue_indices():
+            cue_entry = self.agent_memory.get(cue_index)
+            if (
+                cue_entry
+                and cue_entry.is_cue_index()
+                and cue_entry.cue_type == "source"
+            ):
+                retained_source_cues.append(cue_entry)
 
         # Drop the soon-to-be-replaced original entry.
         self.agent_memory.delete(best_candidate.index)
 
         # Pull the cue indices that the LLM produced as part of this decision.
-        # TODO(source-registry): Preserve source cue backlinks during cross-source merges.
-        # When a primary memory from source A is merged with a new entry from source B,
-        # the deleted best_candidate's cue_indices (which include source cue backlinks)
-        # are lost — only fresh LLM-generated topical cues survive. This means:
-        #   1. The merged primary loses its source cue backlink(s).
-        #   2. The old source cue's linked_memory pointer becomes stale.
-        #   3. The new source's _create_source_cue() can't find the original index
-        #      in the store (it was consumed by the merge), so it skips backlinking.
-        # Fix: carry forward best_candidate.get_cue_indices() source cue entries
-        # into updated_cue_indices, and update both source cues' linked_memory to
-        # point at the merged index. A merged primary may legitimately belong to
-        # multiple sources.
         updated_cue_indices = update_decision.get("updated_cue_indices", []) or []
 
         # Sanitize cue indices when we have any.
@@ -655,7 +605,11 @@ class MemoryBuilder(ABC):
                 if not cue:
                     continue
                 cue_lower = cue.lower()
-                if cue_lower in seen or cue_lower == updated_index_lower or len(cue.split()) < 2:
+                if (
+                    cue_lower in seen
+                    or cue_lower == updated_index_lower
+                    or len(cue.split()) < 2
+                ):
                     continue
                 seen.add(cue_lower)
                 validated_cues.append(cue)
@@ -699,6 +653,18 @@ class MemoryBuilder(ABC):
             extra_metadata=merged_extra if merged_extra else {},
         )
         self.agent_memory.add(new_memory_entry)
+
+        # Restore source-cue links without reclassifying them as topical cues.
+        for source_cue in retained_source_cues:
+            if not source_cue.index:
+                continue
+            self.agent_memory.add_source_cue(
+                source_description=source_cue.index,
+                linked_memory_indices=[updated_index],
+                data_type=source_cue.data_type or "",
+                timestamp_unix=source_cue.timestamp_unix or 0,
+                extra_metadata=dict(source_cue.extra_metadata or {}),
+            )
 
         # Operational log line for the update.
         logger.info(

@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import logging
 import os
-from typing import List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from omegaconf import DictConfig
-from openai import OpenAI
+
+if TYPE_CHECKING:
+    from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +23,9 @@ def _cfg_get(cfg: Optional[DictConfig], key: str, default: str = "") -> str:
     return getattr(block, key, default)
 
 
-def get_general_embedding_client(cfg: Optional[DictConfig] = None) -> OpenAI:
+def get_general_embedding_client(cfg: Optional[DictConfig] = None) -> Any:
     """Build a general embeddings API client."""
+    from openai import OpenAI
     base_url = (
         os.getenv("EMBEDDING_API_BASE")
         or os.getenv("LLM_API_BASE")
