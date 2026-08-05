@@ -11,12 +11,12 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 from utils import load_data
-from agent_memory.utils.llm import get_general_chat_completion_client
-from agent_memory.utils.embedding import get_general_embedding_client
+from ultramem.utils.llm import get_general_chat_completion_client
+from ultramem.utils.embedding import get_general_embedding_client
 
 load_dotenv()
 
-# Re-uses the same answer-prompt structure as agent_memory/Mem0 for an apples-
+# Re-uses the same answer-prompt structure as ultramem/Mem0 for an apples-
 # to-apples comparison.
 PROMPT = """
     You are an intelligent memory assistant that answers questions based on retrieved context.

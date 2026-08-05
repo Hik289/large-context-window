@@ -1,1 +1,1 @@
-python run_agent_memory.py general.debug=True
+python run_ultramem.py general.debug=True

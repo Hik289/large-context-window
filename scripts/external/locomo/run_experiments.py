@@ -3,7 +3,7 @@ Locomo Experiment Runner
 
 Comprehensive experiment harness for evaluating different memory techniques
 on the Locomo dataset. Supports multiple memory backends including the
-agent_memory backend, Mem0, and RAG-based pipelines.
+ultramem backend, Mem0, and RAG-based pipelines.
 """
 
 from datetime import datetime
@@ -44,12 +44,12 @@ import hydra
 from omegaconf import DictConfig
 
 from evals import evaluate, generate_scores
-from agent_memory.utils.log import configure_logging
+from ultramem.utils.log import configure_logging
 from mem0 import Memory
 
 # Memory system implementations
-from providers.agent_memory.search import AgentMemorySearch
-from providers.agent_memory.add import AgentMemoryAdd
+from providers.ultramem.search import UltraMemSearch
+from providers.ultramem.add import UltraMemAdd
 from providers.memzero.add import MemoryADD
 from providers.memzero.search import MemorySearch
 
@@ -64,9 +64,9 @@ logger = logging.getLogger(__name__)
 from utils import format_duration, init_mem0_client, measure_execution_time
 
 
-def _run_agent_memory_experiment(cfg: DictConfig, data_file: str):
+def _run_ultramem_experiment(cfg: DictConfig, data_file: str):
     """
-    Run the agent_memory technique end-to-end.
+    Run the ultramem technique end-to-end.
 
     Steps:
     1. Build the memory store from conversations.
@@ -81,16 +81,16 @@ def _run_agent_memory_experiment(cfg: DictConfig, data_file: str):
     )
 
     if build_memory:
-        logger.info("\n==== Building Agent Memory ====")
-        print(f"\n==== Building Agent Memory in {cfg.memory.persist_path} ====")
-        memory_manager = AgentMemoryAdd(cfg, data_path=data_file)
+        logger.info("\n==== Building UltraMem ====")
+        print(f"\n==== Building UltraMem in {cfg.memory.persist_path} ====")
+        memory_manager = UltraMemAdd(cfg, data_path=data_file)
         _, build_duration = measure_execution_time(memory_manager.process_all_conversations)
         logger.info(f"Memory processing completed in {format_duration(build_duration)}")
     else:
         logger.info(f"\n==== Skipping memory build — persist path exists: {cfg.memory.persist_path} ====")
         print(f"\n==== Skipping memory build (already exists at {cfg.memory.persist_path}). Set memory.force_rebuild=true to rebuild. ====")
 
-    logger.info("\n==== Searching Agent Memory and Evaluating ====")
+    logger.info("\n==== Searching UltraMem and Evaluating ====")
 
     # Output folder is keyed by method name + retrieval strategy + timestamp.
     method = "external_baseline"
@@ -105,7 +105,7 @@ def _run_agent_memory_experiment(cfg: DictConfig, data_file: str):
     eval_file = os.path.join(output_dir, f"{method}_eval.json")
     score_file = os.path.join(output_dir, f"{method}_scores.json")
 
-    memory_searcher = AgentMemorySearch(cfg, output_file, cfg.memory.top_k, retrieval_strategy=retrieval_strategy)
+    memory_searcher = UltraMemSearch(cfg, output_file, cfg.memory.top_k, retrieval_strategy=retrieval_strategy)
 
     # Time the inference phase
     _, eval_duration = measure_execution_time(
@@ -372,7 +372,7 @@ def run(cfg: DictConfig):
     # Dispatch to the chosen backend.
     technique = cfg.memory.type
     if technique == "external_baseline":
-        _run_agent_memory_experiment(cfg, data_file)
+        _run_ultramem_experiment(cfg, data_file)
     elif technique == "mem0":
         _run_mem0_experiment(cfg, data_file, output_file)
     elif technique == "rag":

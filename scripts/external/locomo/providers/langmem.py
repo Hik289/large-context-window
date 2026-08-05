@@ -12,7 +12,7 @@ from langgraph.store.memory import InMemoryStore
 from langgraph.utils.config import get_store
 from langmem import create_manage_memory_tool, create_search_memory_tool
 from openai import OpenAI
-from agent_memory.utils.llm import get_general_chat_completion_client
+from ultramem.utils.llm import get_general_chat_completion_client
 from prompts import ANSWER_PROMPT
 from tqdm import tqdm
 

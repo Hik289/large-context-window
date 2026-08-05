@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "large-context-window-memory"
+name = "ultramem"
 version = "0.1.0"
 description = "UltraMem: source-resolved dual-view retrieval for persistent memory beyond the prompt."
 readme = "README.md"
@@ -12,7 +12,7 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "The Authors" }]
 keywords = [
-  "agent-memory",
+  "external-memory",
   "large-context",
   "retrieval-augmented-generation",
   "enterprise-search",
@@ -82,13 +82,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Hik289/large-context-window"
-Repository = "https://github.com/Hik289/large-context-window"
-Issues = "https://github.com/Hik289/large-context-window/issues"
+Homepage = "https://github.com/Hik289/UltraMem"
+Repository = "https://github.com/Hik289/UltraMem"
+Issues = "https://github.com/Hik289/UltraMem/issues"
 
 [project.scripts]
-agent-memory = "agent_memory.cli:main"
-ultramem = "agent_memory.cli:main"
+ultramem = "ultramem.cli:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
@@ -97,7 +96,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-"agent_memory.methods.configs" = ["*.yaml"]
+"ultramem.methods.configs" = ["*.yaml"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

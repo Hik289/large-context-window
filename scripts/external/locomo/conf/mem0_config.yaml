@@ -53,7 +53,7 @@ memory:
   memory_store: "external_baseline-debug"
   persist_path: "${general.memory_store_path}/${memory.memory_store}"
     
-  collection_name: "agent_memory"
+  collection_name: "ultramem"
   distance: "cosine"
   query_score_threshold: 0.4
   update_score_threshold: 0.8

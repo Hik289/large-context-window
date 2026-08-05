@@ -7,9 +7,9 @@ test:
 	pytest
 
 self-test:
-	python -m agent_memory.methods.dual_node
-	python -m agent_memory.methods.token_ledger
-	python -m agent_memory.methods.configs.isolation
+	python -m ultramem.methods.dual_node
+	python -m ultramem.methods.token_ledger
+	python -m ultramem.methods.configs.isolation
 
 build:
 	python -m build

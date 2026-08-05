@@ -2,7 +2,7 @@
 Sanity Test for Memory Link Integrity
 
 Tools for finding broken links between cues and linked memories inside an
-agent_memory ChromaDB collection. Validates that every cue resolves to a
+ultramem ChromaDB collection. Validates that every cue resolves to a
 primary memory and that no orphaned references remain.
 """
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class MemoryLinkSanityTester:
     """
-    Comprehensive integrity tester for memory links inside an agent_memory
+    Comprehensive integrity tester for memory links inside an ultramem
     Chroma collection.
 
     Provides utilities to validate consistency between memory references,

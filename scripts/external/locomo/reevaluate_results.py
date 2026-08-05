@@ -1,5 +1,5 @@
 """
-Re-evaluation Script for agent_memory Results
+Re-evaluation Script for ultramem Results
 
 Use this script to re-run the evaluation step against existing output files
 without re-running memory extraction or answering. It's handy when you want
@@ -43,8 +43,8 @@ from tqdm import tqdm
 sys.path.insert(0, str(Path(__file__).parent))
 
 from evals import evaluate, generate_scores
-from agent_memory.utils.log import configure_logging
-from agent_memory.utils.llm import get_general_chat_completion_client
+from ultramem.utils.log import configure_logging
+from ultramem.utils.llm import get_general_chat_completion_client
 from prompts import ANSWER_PROMPT_COMBINED, ANSWER_PROMPT_EVERMEMOS
 
 logger = logging.getLogger(__name__)
@@ -194,7 +194,7 @@ def reevaluate_results(
     answer_model: str = None,
 ):
     """
-    Re-evaluate an existing agent_memory results folder using a different
+    Re-evaluate an existing ultramem results folder using a different
     evaluation model. Optionally regenerate answers with a new template first.
 
     Args:
@@ -318,7 +318,7 @@ def reevaluate_results(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Re-evaluate existing agent_memory results with optional answer regeneration"
+        description="Re-evaluate existing ultramem results with optional answer regeneration"
     )
     parser.add_argument(
         "--results_dir",

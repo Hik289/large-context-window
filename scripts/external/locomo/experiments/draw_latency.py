@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-METHODS = ["A-mem", "Mem0", "agent_memory"]
+METHODS = ["A-mem", "Mem0", "ultramem"]
 CONSTRUCTION_TIMES = [5140.5, 1350.9, 739.86]
 AVG_TOKENS_PER_CONVERSATION = 16641
 

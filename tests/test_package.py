@@ -6,16 +6,16 @@ import sys
 
 import pytest
 
-import agent_memory
-from agent_memory.cli import main
+import ultramem
+from ultramem.cli import main
 
 
 def test_version_is_exposed_without_loading_optional_backends() -> None:
-    assert agent_memory.__version__ == "0.1.0"
+    assert ultramem.__version__ == "0.1.0"
 
 
 def test_cli_version(monkeypatch, capsys) -> None:
-    monkeypatch.setattr(sys, "argv", ["agent-memory", "--version"])
+    monkeypatch.setattr(sys, "argv", ["ultramem", "--version"])
 
     with pytest.raises(SystemExit) as exc:
         main()
@@ -26,18 +26,18 @@ def test_cli_version(monkeypatch, capsys) -> None:
 
 def test_module_entrypoint_exposes_version() -> None:
     completed = subprocess.run(
-        [sys.executable, "-m", "agent_memory", "--version"],
+        [sys.executable, "-m", "ultramem", "--version"],
         check=True,
         capture_output=True,
         text=True,
     )
 
-    assert agent_memory.__version__ in completed.stdout
+    assert ultramem.__version__ in completed.stdout
 
 
 def test_config_command_reports_active_file() -> None:
     completed = subprocess.run(
-        [sys.executable, "-m", "agent_memory", "config"],
+        [sys.executable, "-m", "ultramem", "config"],
         check=True,
         capture_output=True,
         text=True,
@@ -69,7 +69,7 @@ def test_doctor_json_is_safe_and_machine_readable(capsys) -> None:
 
 
 def test_package_root_exposes_lightweight_method_api() -> None:
-    from agent_memory import DualNode, TokenLedger, validate_batch
+    from ultramem import DualNode, TokenLedger, validate_batch
 
     assert DualNode.__name__ == "DualNode"
     assert TokenLedger.__name__ == "TokenLedger"
@@ -79,20 +79,20 @@ def test_package_root_exposes_lightweight_method_api() -> None:
 def test_core_install_does_not_import_optional_backends() -> None:
     script = """
 import sys
-from agent_memory import *
-from agent_memory import MemoryClient
-from agent_memory.methods import *
-import agent_memory.utils.embedding
+from ultramem import *
+from ultramem import MemoryClient
+from ultramem.methods import *
+import ultramem.utils.embedding
 
 client = MemoryClient(api_key="test-token", server_url="https://memory.example")
 assert client.is_remote
 for module in ("chromadb", "openai", "torch", "transformers"):
     assert module not in sys.modules, module
-assert "agent_memory.core.local_client" not in sys.modules
+assert "ultramem.core.local_client" not in sys.modules
 """
     subprocess.run([sys.executable, "-c", script], check=True)
 
 
 def test_optional_interfaces_remain_discoverable() -> None:
-    assert "DualIndex" in dir(agent_memory)
-    assert "MemoryClient" in dir(agent_memory)
+    assert "DualIndex" in dir(ultramem)
+    assert "MemoryClient" in dir(ultramem)

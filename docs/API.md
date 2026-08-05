@@ -15,7 +15,7 @@ interfaces and the installation required for each one.
 | Development | `pip install -e ".[dev]"` | Tests and package builds |
 
 Optional backends are imported only when their interfaces are used. A core installation
-can therefore import `agent_memory`, run the CLI, and construct a remote client without
+can therefore import `ultramem`, run the CLI, and construct a remote client without
 installing the local retrieval stack.
 
 ## Core Contracts
@@ -23,7 +23,7 @@ installing the local retrieval stack.
 The package root exposes the interfaces supported by every installation:
 
 ```python
-from agent_memory import (
+from ultramem import (
     DualNode,
     DualNodeError,
     MemoryClient,
@@ -45,7 +45,7 @@ Remote mode needs only the core installation and a compatible service endpoint:
 ```python
 import os
 
-from agent_memory import MemoryClient
+from ultramem import MemoryClient
 
 client = MemoryClient(
     api_key=os.environ["ULTRAMEM_API_KEY"],
@@ -71,7 +71,7 @@ the selected pipeline:
 ```python
 from omegaconf import OmegaConf
 
-from agent_memory import MemoryClient
+from ultramem import MemoryClient
 
 cfg = OmegaConf.load("path/to/runtime.yaml")
 client = MemoryClient(cfg=cfg, user_id="workspace-user")
@@ -90,8 +90,8 @@ The user identifier scopes the local collection. `advanced_query` accepts `seman
 Specialized components remain available through explicit imports:
 
 ```python
-from agent_memory import DualIndex
-from agent_memory.methods import build_l0_dualnodes
+from ultramem import DualIndex
+from ultramem.methods import build_l0_dualnodes
 ```
 
 `DualIndex` requires the `retrieval` extra. Hierarchy construction may additionally

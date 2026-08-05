@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from agent_memory.methods import DualNode, validate_batch
+from ultramem.methods import DualNode, validate_batch
 
 
 def main() -> None:

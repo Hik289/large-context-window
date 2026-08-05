@@ -135,7 +135,7 @@ Examples:
     args = parser.parse_args()
 
     # Configure logging once before doing any work.
-    from agent_memory.utils.log import configure_logging
+    from ultramem.utils.log import configure_logging
     configure_logging()
     cfg.general.debug = True
 

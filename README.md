@@ -14,10 +14,18 @@ immutable identifiers resolve every hit to its source text, and only a bounded e
 set reaches the answer model.
 
 <p align="center">
-  <img src="assets/pipeline.png" width="100%" alt="UltraMem dual-view retrieval and bounded evidence pipeline">
+  <img src="assets/ultramem_overview_evidence_context.png" width="100%" alt="UltraMem maps ultra-large external memory to a bounded evidence context">
 </p>
 
-<p align="center"><em>Address the full memory; read only the evidence needed for the current answer.</em></p>
+<p align="center"><em>UltraMem keeps the complete collection addressable through raw-evidence and typed-memory views, then resolves multi-route retrieval to a small set of source-faithful evidence cards for answering.</em></p>
+
+## Recall First, Attribution Last
+
+<p align="center">
+  <img src="assets/recall_attribution_answering.png" width="100%" alt="UltraMem recall, evidence selection, answering, and post-answer attribution">
+</p>
+
+<p align="center"><em>Query expansion broadens candidate recall; fusion and reranking remove noise before generation; post-answer attribution narrows the reported sources after the answer is fixed.</em></p>
 
 ## Highlights
 
@@ -52,8 +60,8 @@ one query.
 UltraMem requires Python 3.11 or newer.
 
 ```bash
-git clone https://github.com/Hik289/large-context-window.git
-cd large-context-window
+git clone https://github.com/Hik289/UltraMem.git
+cd UltraMem
 
 python -m venv .venv
 source .venv/bin/activate
@@ -83,7 +91,7 @@ python examples/minimal_contract.py
 The same primitives are available from the package root:
 
 ```python
-from agent_memory import DualNode, TokenLedger, validate_batch
+from ultramem import DualNode, TokenLedger, validate_batch
 
 node = DualNode(
     node_id="policy:001",
@@ -112,7 +120,7 @@ document, or vector-store dependencies:
 ```python
 import os
 
-from agent_memory import MemoryClient
+from ultramem import MemoryClient
 
 memory = MemoryClient(
     api_key=os.environ["ULTRAMEM_API_KEY"],
@@ -177,16 +185,16 @@ indexes, raw predictions, and credentials are intentionally excluded.
 | Reproduction level | Included | Entry point |
 | --- | --- | --- |
 | Package and CLI checks | Yes | `pytest` |
-| Representation and provenance checks | Yes | `python -m agent_memory.methods.dual_node` |
-| Token-accounting checks | Yes | `python -m agent_memory.methods.token_ledger` |
+| Representation and provenance checks | Yes | `python -m ultramem.methods.dual_node` |
+| Token-accounting checks | Yes | `python -m ultramem.methods.token_ledger` |
 | Publication plotting code | Yes | `python figures/make_all_figs.py` |
 | Full corpus replay | Requires authorized data and endpoints | `docs/REPRODUCIBILITY.md` |
 
 ## Repository Layout
 
 ```text
-large-context-window/
-├── src/agent_memory/
+UltraMem/
+├── src/ultramem/
 │   ├── methods/          # dual nodes, indexing, hierarchy construction, token ledger
 │   ├── document_eval/    # ingestion, retrieval, answering, and metrics
 │   ├── retriever/        # semantic, hybrid, planning, and reformulation strategies

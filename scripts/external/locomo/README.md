@@ -4,14 +4,14 @@ You can run experiments using the provided commands:
 
 ```bash
 # Run AgentMemory experiments
-python run_agent_memory.py openai.model="gpt-4.1-mini" memory.memory_store="external_baseline-4.1-all"
+python run_ultramem.py openai.model="gpt-4.1-mini" memory.memory_store="external_baseline-4.1-all"
 ```
 
 This script:
 1. Build the memory based on the conversations if the memory store doesn't exist.
-2. Generate the answers for each question in "${result_folder}/agent_memory_output.json" file.
-3. Evaluate the results using BLEU, F1 and LLM-AS-JUDGE in "${result_folder}/agent_memory_eval.json" file.
-4. Generate the final result scores in "${result_folder}/agent_memory_scores.json" file.
+2. Generate the answers for each question in "${result_folder}/ultramem_output.json" file.
+3. Evaluate the results using BLEU, F1 and LLM-AS-JUDGE in "${result_folder}/ultramem_eval.json" file.
+4. Generate the final result scores in "${result_folder}/ultramem_scores.json" file.
 
 Example output:
 ```

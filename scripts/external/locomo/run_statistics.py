@@ -16,8 +16,8 @@ from tqdm import tqdm
 
 # Memory system implementations
 
-from agent_memory.client import MemoryClient
-from run_agent_memory import run_agent_memory_experiment
+from ultramem.client import MemoryClient
+from run_ultramem import run_ultramem_experiment
 from chromadb import PersistentClient
 
 logger = logging.getLogger(__name__)

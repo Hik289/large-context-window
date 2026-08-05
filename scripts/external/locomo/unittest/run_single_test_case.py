@@ -2,7 +2,7 @@
 Locomo Experiment Runner
 
 Provides an experimental harness for evaluating different memory techniques
-on the Locomo dataset. Supports several memory backends — agent_memory, Mem0,
+on the Locomo dataset. Supports several memory backends — ultramem, Mem0,
 and a RAG baseline — driven by configurable test cases.
 """
 
@@ -14,17 +14,17 @@ from typing import Dict, List, Any
 import hydra
 from omegaconf import DictConfig
 
-from agent_memory.utils.llm import get_general_chat_completion_client
+from ultramem.utils.llm import get_general_chat_completion_client
 
 # Make the parent directory importable so we can resolve sibling modules.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Provider implementations and evaluation helpers.
 from metrics.llm_judge import evaluate_llm_judge
-from providers.agent_memory.add import AgentMemoryAdd
-from providers.agent_memory.search import AgentMemorySearch
+from providers.ultramem.add import UltraMemAdd
+from providers.ultramem.search import UltraMemSearch
 from evals import evaluate, generate_scores
-from agent_memory.utils.log import configure_logging
+from ultramem.utils.log import configure_logging
 
 
 def load_test_cases(config_file: str = "test_cases.yaml") -> Dict[str, Any]:
@@ -102,7 +102,7 @@ def run_single_test_case(cfg: DictConfig, test_case: Dict[str, Any]) -> Dict[str
         # Reuse an existing memory store — no ingestion needed.
         print(f"Using existing memory store: {memory_store}")
         cfg.memory.persist_path = f"{cfg.general.memory_store_path}/{memory_store}"
-        memory_manager = AgentMemoryAdd(cfg, data_path=data_file)
+        memory_manager = UltraMemAdd(cfg, data_path=data_file)
         conversation_idx = test_case.get("conversation_idx", 0)
     else:
         # Build the memory store from scratch for this test case.
@@ -117,11 +117,11 @@ def run_single_test_case(cfg: DictConfig, test_case: Dict[str, Any]) -> Dict[str
             "num_sessions": num_sessions,
         }
 
-        print("\n==== Building Agent Memory ====")
+        print("\n==== Building UltraMem ====")
 
         # Per-test-case persist path — overwrite if necessary.
         cfg.memory.persist_path = f"{cfg.general.memory_store_path}/chroma_debug"
-        memory_manager = AgentMemoryAdd(cfg, data_path=data_file, data_config=data_config)
+        memory_manager = UltraMemAdd(cfg, data_path=data_file, data_config=data_config)
 
         # Run the ingestion pass.
         for idx, item in enumerate(memory_manager.data):
@@ -131,7 +131,7 @@ def run_single_test_case(cfg: DictConfig, test_case: Dict[str, Any]) -> Dict[str
     gt_answer = test_case["answer"]
 
     # Build the searcher and evaluate the answer it produces.
-    memory_searcher = AgentMemorySearch(
+    memory_searcher = UltraMemSearch(
         cfg, "dummy_result.json", cfg.memory.top_k
     )
     data = memory_manager.data[0]
@@ -170,7 +170,7 @@ def run(cfg: DictConfig):
     Entry point that runs a chosen test case end-to-end.
 
     Loads the YAML test-case definitions, picks one (currently hardcoded), and
-    runs it through the full ``AgentMemoryAdd`` -> ``AgentMemorySearch`` ->
+    runs it through the full ``UltraMemAdd`` -> ``UltraMemSearch`` ->
     judge pipeline.
 
     Args:

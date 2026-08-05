@@ -8,9 +8,9 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 from utils import load_data
-from agent_memory.utils.llm import get_general_chat_completion_client
+from ultramem.utils.llm import get_general_chat_completion_client
 
-# Shares the answer-prompt template used by agent_memory and Mem0 so the three
+# Shares the answer-prompt template used by ultramem and Mem0 so the three
 # baselines remain directly comparable.
 PROMPT = """
     You are an intelligent memory assistant that answers questions based on conversation history.

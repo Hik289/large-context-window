@@ -13,10 +13,10 @@ End-to-end pipeline for evaluating the memory system on cognitive items:
 
 Usage (mirrors the override syntax of ``run_experiments.py``)::
 
-  PYTHONPATH=/path/to/agent_memory/src python3 run_cognitive_eval.py \\
+  PYTHONPATH=/path/to/ultramem/src python3 run_cognitive_eval.py \\
       retrieval.strategy=semantic \\
       llm.model=YOUR_CHAT_MODEL \\
-      general.project_path=/path/to/agent_memory/app/locomo
+      general.project_path=/path/to/ultramem/app/locomo
 """
 
 from __future__ import annotations
@@ -64,10 +64,10 @@ from cognitive_data_adapter import (
 )
 from cognitive_evals import evaluate_cognitive, generate_cognitive_scores
 from metrics.retrieval_recall import compute_recall_for_cognitive
-from providers.agent_memory.add import AgentMemoryAdd
-from providers.agent_memory.search import AgentMemorySearch
-from agent_memory.utils.latency import count_memories_tokens
-from agent_memory.utils.log import configure_logging
+from providers.ultramem.add import UltraMemAdd
+from providers.ultramem.search import UltraMemSearch
+from ultramem.utils.latency import count_memories_tokens
+from ultramem.utils.log import configure_logging
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def search_phase(
     retrieval_strategy: str,
 ) -> List[dict]:
     """Run retrieval for every cognitive trigger and persist the search results."""
-    searcher = AgentMemorySearch(
+    searcher = UltraMemSearch(
         cfg, output_path=output_file,
         top_k=cfg.memory.top_k,
         retrieval_strategy=retrieval_strategy,
@@ -176,7 +176,7 @@ def _build_memory_if_needed(
     The cognitive dataset injects fresh dialogue into the original locomo10
     conversations. Here we merge every evidence line back into the locomo10
     data, write an augmented JSON file, and feed it through the standard
-    ``AgentMemoryAdd`` pipeline so the resulting memory store contains both
+    ``UltraMemAdd`` pipeline so the resulting memory store contains both
     the original and the injected dialogue.
 
     Skips when ``persist_path`` already exists (unless
@@ -195,7 +195,7 @@ def _build_memory_if_needed(
     logger.info(f"Building memory in {cfg.memory.persist_path} from augmented data …")
     build_start = time.time()
 
-    memory_manager = AgentMemoryAdd(cfg, data_path=augmented_path)
+    memory_manager = UltraMemAdd(cfg, data_path=augmented_path)
     memory_manager.process_all_conversations()
 
     build_duration = time.time() - build_start

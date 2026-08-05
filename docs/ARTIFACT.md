@@ -6,7 +6,7 @@ private corpora or provider credentials.
 
 ## Included
 
-- Installable `agent_memory` Python package.
+- Installable `ultramem` Python package.
 - Canonical dual-view node, dual index, hierarchy builder, and token-ledger components.
 - Public model and environment templates.
 - Credential-free tests for method invariants and package importability.

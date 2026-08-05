@@ -1,4 +1,4 @@
-from agent_memory.rl import Trajectory, TrajectoryScorer
+from ultramem.rl import Trajectory, TrajectoryScorer
 
 
 def test_groundedness_prefers_evidence_identifier_recall() -> None:

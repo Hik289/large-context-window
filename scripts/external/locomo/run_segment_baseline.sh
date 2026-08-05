@@ -4,7 +4,7 @@
 # This baseline uses conversation segments as episodic memories (no LLM summarization)
 # and formats output with both episodic segments and factual memories
 
-python run_agent_memory.py \
+python run_ultramem.py \
     openai.model="gpt-4.1-mini" \
     general.debug=True \
     memory.memory_store="segment-baseline-debug" \

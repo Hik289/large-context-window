@@ -4,9 +4,9 @@ import json
 
 import pytest
 
-from agent_memory.methods import DualNode, TokenLedger, validate_batch, validate_one
-from agent_memory.methods.configs.isolation import V4ConfigError, validate_config
-from agent_memory.methods.configs import model_resolver
+from ultramem.methods import DualNode, TokenLedger, validate_batch, validate_one
+from ultramem.methods.configs.isolation import V4ConfigError, validate_config
+from ultramem.methods.configs import model_resolver
 
 
 def _valid_node(node_id: str = "node-1") -> DualNode:

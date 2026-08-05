@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from agent_memory.core.remote_client import RemoteMemoryClient
+from ultramem.core.remote_client import RemoteMemoryClient
 
 
 class _Response:

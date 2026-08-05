@@ -58,10 +58,10 @@ openai:
 memory:
   type: "external_baseline" # external_baseline, mem0, rag, full_context; [TO SUPPORT] langmem, zep
   # memory_store: "external_baseline-4.1-subset1-mi"
-  memory_store: "agent_memory_debug"
+  memory_store: "ultramem_debug"
   persist_path: "${general.memory_store_path}/${memory.memory_store}"
 
-  collection_name: "agent_memory"
+  collection_name: "ultramem"
   distance: "cosine"
   query_score_threshold: 0.4
   update_score_threshold: 0.8

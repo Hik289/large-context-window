@@ -56,7 +56,7 @@ def init_mem0_client(cfg: DictConfig):
         "vector_store": {
             "provider": "chroma",
             "config": {
-                "collection_name": "agent_memory",
+                "collection_name": "ultramem",
                 "path": cfg.memory.persist_path,
                 # ChromaDB Cloud (optional):
                 # "api_key": "your-chroma-cloud-api-key",

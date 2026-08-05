@@ -13,9 +13,9 @@ pip install -e ".[dev]"
 pytest
 ultramem --version
 ultramem doctor
-python -m agent_memory.methods.dual_node
-python -m agent_memory.methods.token_ledger
-python -m agent_memory.methods.configs.isolation
+python -m ultramem.methods.dual_node
+python -m ultramem.methods.token_ledger
+python -m ultramem.methods.configs.isolation
 ```
 
 These commands validate serialization, dual-representation invariants, provenance
@@ -67,7 +67,7 @@ This command prints the selected YAML path and model identifiers, but never API 
 For cost estimates, pass a price table in USD per million tokens:
 
 ```python
-from agent_memory.methods import TokenLedger
+from ultramem.methods import TokenLedger
 
 ledger = TokenLedger(
     # Illustrative values only; replace them with dated provider prices.

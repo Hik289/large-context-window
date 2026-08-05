@@ -64,7 +64,7 @@ def analyze_and_save_latency(output_file: str, output_dir: str):
     """
     Build a latency summary from a results file and persist it to disk.
 
-    This is invoked from ``run_agent_memory.py`` once the eval finishes.
+    This is invoked from ``run_ultramem.py`` once the eval finishes.
 
     Args:
         output_file: Path of the results JSON to analyse.

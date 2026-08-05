@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from jinja2 import Template
 from openai import OpenAI
-from agent_memory.utils.llm import get_general_chat_completion_client
+from ultramem.utils.llm import get_general_chat_completion_client
 from utils import generate_debug_data, init_mem0_client, load_data
 from prompts import ANSWER_PROMPT, ANSWER_PROMPT_GRAPH
 from tqdm import tqdm

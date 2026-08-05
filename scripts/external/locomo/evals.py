@@ -9,8 +9,8 @@ from collections import defaultdict
 import hydra
 from omegaconf import DictConfig
 
-from agent_memory.utils.llm import get_general_chat_completion_client
-from agent_memory.utils.log import configure_logging
+from ultramem.utils.llm import get_general_chat_completion_client
+from ultramem.utils.log import configure_logging
 from metrics.llm_judge import evaluate_llm_judge
 from metrics.utils import calculate_bleu_scores, calculate_metrics
 from tqdm import tqdm

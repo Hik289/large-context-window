@@ -3,7 +3,7 @@
 Chroma database inspector.
 
 A small CLI utility for poking at the Chroma collection used by the
-agent_memory memory system: list, search, and lookup memories from disk.
+ultramem memory system: list, search, and lookup memories from disk.
 """
 
 import os
@@ -35,7 +35,7 @@ class ChromaViewer:
 
             names = [c.name for c in available]
             # Prefer the canonical name, otherwise just take the first one.
-            collection_name = "agent_memory" if "agent_memory" in names else names[0]
+            collection_name = "ultramem" if "ultramem" in names else names[0]
             print(f"Auto-detected collection: {collection_name}")
 
         self.collection_name = collection_name

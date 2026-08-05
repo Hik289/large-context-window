@@ -22,8 +22,8 @@ from collections import defaultdict
 from tqdm import tqdm
 from openai import BadRequestError
 
-from agent_memory.utils.latency import count_memories_tokens
-from agent_memory.utils.llm import get_general_chat_completion_client
+from ultramem.utils.latency import count_memories_tokens
+from ultramem.utils.llm import get_general_chat_completion_client
 from metrics.utils import extract_json
 from prompts import COGNITIVE_RESPONSE_PROMPT, COGNITIVE_JUDGE_PROMPT
 
