@@ -3,15 +3,15 @@
 **Source-resolved retrieval for persistent memory beyond the prompt**
 
 <p align="center">
-  <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-blue">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+  <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-blue">
 </p>
 
-UltraMem is an installable research artifact for agents that operate over document
-collections too large to place in a single prompt. It separates low-cost candidate
-discovery from source-faithful evidence loading: compact memory records retrieve broadly,
-immutable identifiers resolve every hit to its source text, and only a bounded evidence
-set reaches the answer model.
+UltraMem is a Python package and reference implementation for agents that must search
+persistent collections too large for one prompt. It turns an external store containing
+10M to 250M tokens into a bounded, source-grounded evidence context: compact records retrieve
+broadly, immutable identifiers resolve every hit to authoritative text, and only selected
+evidence reaches the answer model.
 
 <p align="center">
   <img src="assets/ultramem_overview_evidence_context.png" width="100%" alt="UltraMem maps ultra-large external memory to a bounded evidence context">
@@ -27,7 +27,7 @@ set reaches the answer model.
 
 <p align="center"><em>Query expansion broadens candidate recall; fusion and reranking remove noise before generation; post-answer attribution narrows the reported sources after the answer is fixed.</em></p>
 
-## Highlights
+## What UltraMem Does
 
 - **Dual-view memory.** Each `DualNode` pairs a compact retrieval representation with
   detailed source evidence and stable provenance identifiers.
@@ -54,6 +54,24 @@ set reaches the answer model.
 The key distinction is between **addressable memory** and **active context**. The former
 can span 10M to 250M tokens; the latter remains a small, inspectable evidence budget for
 one query.
+
+## Reported Results
+
+The accompanying evaluation measures answer quality, evidence efficiency, and scaling
+under fixed active-context budgets. Raw corpora and model outputs are not redistributed;
+the public package exposes the contracts and accounting needed to reproduce authorized
+runs.
+
+| Evaluation | UltraMem | Reference | Observed difference |
+| --- | ---: | ---: | ---: |
+| 10M end-to-end combined score | 82.26 | 68.22 published reference | +14.04 pp |
+| 10M selective evidence | 2,049 tok/query | 6,532 detailed-only | -68.6% tokens; -1.50 pp correctness |
+| 20M selective evidence | 2,025 tok/query | 6,497 detailed-only | -68.8% tokens; -1.50 pp correctness |
+
+With the same bounded query budget, the 250M stress test reports 58.02 combined score
+and 73.50% correctness. The scaling trace shows that retrieval coverage, rather than
+prompt expansion, becomes the principal bottleneck at the largest tiers. Protocol notes
+and the full reporting boundary are documented in [Evaluation](docs/RESULTS.md).
 
 ## Installation
 
