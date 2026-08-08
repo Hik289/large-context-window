@@ -101,7 +101,7 @@ available.
 
 ## Configuration and Secrets
 
-Model traffic uses a general chat-completions-compatible endpoint. Keep credentials in
+Model traffic uses the general chat and embedding endpoints. Keep credentials in
 environment variables and model aliases in `configs/models.yaml`:
 
 ```bash
@@ -113,3 +113,7 @@ ultramem config
 
 The CLI reports endpoint and alias status without printing API keys. Do not commit `.env`,
 private corpora, generated indexes, or raw model outputs.
+
+Hosted chat calls use `POST /chat/completions`; hosted embeddings use
+`POST /embeddings`. Both receive bearer authentication. Local embeddings remain the
+default and do not require API credentials.

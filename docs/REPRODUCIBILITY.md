@@ -46,8 +46,8 @@ cp .env.example .env
 cp configs/models.example.yaml configs/models.yaml
 ```
 
-Each model alias must resolve to an explicit chat-completions-compatible endpoint and
-model identifier. The resolver fails loudly when an alias is missing or unresolved. Raw
+Each model alias must resolve to an explicit general chat endpoint and model identifier.
+The resolver fails loudly when an alias is missing or unresolved. Raw
 API keys should stay in environment variables, never in YAML.
 
 By default, the resolver reads `configs/models.yaml` from the current project. Set

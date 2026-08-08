@@ -4,14 +4,14 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/License-MIT-green.svg"></a>
-  <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-blue">
+  <a href="pyproject.toml"><img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-blue"></a>
 </p>
 
 UltraMem is a Python package and reference implementation for agents that must search
 persistent collections too large for one prompt. It turns an external store containing
-10M to 250M tokens into a bounded, source-grounded evidence context: compact records retrieve
-broadly, immutable identifiers resolve every hit to authoritative text, and only selected
-evidence reaches the answer model.
+10M to 250M tokens into a bounded, source-grounded evidence context. Compact records
+retrieve broadly, immutable identifiers resolve every hit to authoritative text, and
+only selected evidence reaches the answer model.
 
 <p align="center">
   <img src="assets/ultramem_overview_evidence_context.png" width="100%" alt="UltraMem maps ultra-large external memory to a bounded evidence context">
@@ -169,11 +169,28 @@ LLM_API_BASE=https://your-endpoint.example/v1
 LLM_API_KEY=your-secret
 LLM_CHAT_MODEL=your-chat-model
 LLM_JUDGE_MODEL=your-judge-model
+
+# Optional hosted embeddings; local embeddings are the default.
+ULTRAMEM_LOCAL_EMBEDDING=0
+EMBEDDING_API_BASE=https://your-endpoint.example/v1
+EMBEDDING_API_KEY=your-secret
+EMBEDDING_MODEL=your-embedding-model
 ```
 
 Model names live in `configs/models.yaml`; API keys stay in `.env`. The resolver rejects
 missing aliases, unresolved model names, and non-general providers before a request is
 sent. Set `ULTRAMEM_MODELS_CONFIG` when the alias file is outside the repository root.
+
+All hosted model traffic follows one general contract:
+
+| Operation | Method and path | Required request fields |
+| --- | --- | --- |
+| Chat | `POST /chat/completions` | `model`, `messages`, token limit |
+| Embeddings | `POST /embeddings` | `model`, `input` |
+
+The gateway receives bearer authentication. Application code does not select a cloud
+vendor or embed account-specific deployment names; routing remains behind the endpoint.
+Local sentence-transformer embeddings require no API configuration.
 
 Inspect the active, non-secret configuration and optional dependency groups:
 

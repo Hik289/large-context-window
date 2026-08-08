@@ -52,7 +52,7 @@ embedding:
   provider: local
   model: "sentence-transformers/all-MiniLM-L6-v2"
   dim: 384
-  notes: "Swap for a hosted embedding model only when the change is recorded."
+  notes: "Set ULTRAMEM_LOCAL_EMBEDDING=0 and use EMBEDDING_API_* for the general hosted endpoint."
 
 substitution_policy:
   - rule: "Every alias used by a run must resolve to one concrete model."
